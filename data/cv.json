@@ -1,0 +1,38 @@
+{
+  "name": "Atalay Mudanyali",
+  "contact": {
+    "email": "atalay.mudanyali@gmail.com",
+    "github": "https://github.com/PLACEHOLDER",
+    "linkedin": "https://linkedin.com/in/PLACEHOLDER"
+  },
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "school": "PLACEHOLDER University",
+      "dates": "2020 – 2024",
+      "gpa": "3.X/4.0"
+    }
+  ],
+  "skills": {
+    "languages": ["C#", "Java", "Python", "SQL", "JavaScript"],
+    "frameworks": ["ASP.NET Core", "Spring Boot", "FastAPI"],
+    "ai_ml": ["GPT-4 API", "Whisper API", "TTS", "RAG", "Prompt Engineering", "LLM Integration"],
+    "databases": ["PostgreSQL", "Redis", "MongoDB"],
+    "tools": ["Docker", "Git", "GitHub Actions", "Linux", "Prometheus", "Grafana"]
+  },
+  "experience": [
+    {
+      "id": "internship-ai-voicebot",
+      "role": "Software Engineering Intern",
+      "company": "PLACEHOLDER Company",
+      "dates": "2024",
+      "bullets": [
+        "Integrated GPT-4 and Whisper APIs into a production voice assistant, reducing end-to-end response latency from 10 seconds to 2-5 seconds",
+        "Designed and implemented streaming TTS pipeline to deliver audio responses incrementally, improving perceived responsiveness",
+        "Built prompt engineering framework to maintain conversation context across multi-turn voice interactions",
+        "Collaborated with product team to define voice assistant capabilities and edge-case handling"
+      ]
+    }
+  ],
+  "projects": []
+}

@@ -1,0 +1,36 @@
+{
+  "name": "Test User",
+  "contact": {
+    "email": "test@example.com",
+    "github": "https://github.com/test",
+    "linkedin": "https://linkedin.com/in/test"
+  },
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "school": "Test University",
+      "dates": "2020 – 2024",
+      "gpa": "3.5/4.0"
+    }
+  ],
+  "skills": {
+    "languages": ["Python", "Java", "C#"],
+    "frameworks": ["FastAPI", "Spring Boot"],
+    "ai_ml": ["GPT-4 API", "RAG"],
+    "databases": ["PostgreSQL"],
+    "tools": ["Docker", "Git"]
+  },
+  "experience": [
+    {
+      "id": "internship-alpha",
+      "role": "Software Intern",
+      "company": "Alpha Corp",
+      "dates": "2024",
+      "bullets": [
+        "Built REST APIs using FastAPI serving 1000 requests per second",
+        "Integrated GPT-4 into a customer support chatbot reducing response time by 50%"
+      ]
+    }
+  ],
+  "projects": []
+}
