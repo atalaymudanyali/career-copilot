@@ -43,6 +43,19 @@ class OllamaClient:
             return json.loads(content)
         return content
 
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        payload = {
+            "model": settings.ollama_embed_model,
+            "input": texts,
+        }
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{self.base_url}/api/embed",
+                json=payload,
+            )
+            response.raise_for_status()
+        return response.json()["embeddings"]
+
     async def health_check(self) -> bool:
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
