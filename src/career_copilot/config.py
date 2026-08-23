@@ -8,7 +8,9 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
+    ollama_embed_model: str = "nomic-embed-text"
     data_dir: Path = Path("data")
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/career_copilot"
 
     @property
     def cv_path(self) -> Path:
