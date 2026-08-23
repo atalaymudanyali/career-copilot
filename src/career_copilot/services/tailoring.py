@@ -65,6 +65,44 @@ async def tailor(job_description: str, client: OllamaClient | None = None) -> Ta
     )
 
 
+async def tailor_rag(
+    job_description: str,
+    chunks: list[SourceChunk],
+    client: OllamaClient | None = None,
+) -> TailoringResult:
+    llm = client or OllamaClient()
+
+    valid_source_ids = {chunk.source_id for chunk in chunks}
+
+    chunks_json = json.dumps(
+        [chunk.model_dump() for chunk in chunks],
+        indent=2,
+    )
+    user_prompt = build_user_prompt(chunks_json, job_description)
+
+    raw_response = await llm.chat(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        json_mode=True,
+    )
+
+    result = TailoringResult.model_validate(raw_response)
+
+    valid_bullets, invalid_bullets = validate_source_ids(result.tailored_bullets, valid_source_ids)
+    for bullet in invalid_bullets:
+        logger.warning(
+            "Dropped bullet with unresolvable source_id '%s': %s",
+            bullet.source_id,
+            bullet.text,
+        )
+
+    return TailoringResult(
+        tailored_bullets=valid_bullets,
+        why_i_fit=result.why_i_fit,
+        gaps=result.gaps,
+    )
+
+
 def get_source_chunks() -> list[SourceChunk]:
     cv = load_cv()
     projects = load_projects()
