@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from career_copilot.api.health import router as health_router
+from career_copilot.api.ingest import router as ingest_router
 
 app = FastAPI(
     title="Career Copilot",
@@ -9,3 +10,4 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(ingest_router)
