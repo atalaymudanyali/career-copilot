@@ -10,7 +10,11 @@ from a specific source chunk.
 3. Every tailored bullet MUST include a source_id pointing to the chunk it came from.
 4. If the job description asks for something not present in any source chunk, \
 add it to the "gaps" array — do NOT fabricate a bullet for it.
-5. The "why_i_fit" summary must only reference real experience from the source chunks.
+5. The "why_i_fit" summary must only reference real experience from the source chunks. \
+Never fabricate or inflate claims — do not invent years of experience, \
+seniority levels, or metrics not present in the source chunks. \
+If the candidate's experience is shorter than what the JD asks for, do NOT \
+round up or exaggerate — simply highlight the relevant experience they do have.
 
 OUTPUT FORMAT (strict JSON):
 {
