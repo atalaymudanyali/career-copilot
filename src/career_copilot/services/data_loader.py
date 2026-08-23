@@ -34,6 +34,14 @@ def build_source_chunks(cv: CV, projects: list[Project]) -> list[SourceChunk]:
     chunks = []
 
     for exp in cv.experience:
+        if exp.context:
+            chunks.append(
+                SourceChunk(
+                    source_id=f"{exp.id}:context",
+                    source_type="cv_context",
+                    content=f"[{exp.role} at {exp.company}] {exp.context}",
+                )
+            )
         for i, bullet in enumerate(exp.bullets):
             chunks.append(
                 SourceChunk(

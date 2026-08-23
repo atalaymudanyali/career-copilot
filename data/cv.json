@@ -2,37 +2,79 @@
   "name": "Atalay Mudanyali",
   "contact": {
     "email": "atalay.mudanyali@gmail.com",
-    "github": "https://github.com/PLACEHOLDER",
-    "linkedin": "https://linkedin.com/in/PLACEHOLDER"
+    "github": "https://github.com/atalaymudanyali",
+    "linkedin": "https://linkedin.com/in/atalaymudanyali"
   },
+  "summary": "Backend developer with production experience shipping an AI-powered app (Bondly) to the App Store and Google Play. Specialized in .NET Core and Java Spring Boot, with hands-on work integrating LLM APIs (GPT-4, Whisper, TTS), designing scalable REST APIs, and optimizing PostgreSQL data layers. Comfortable using AI-assisted development tools (Cursor, Claude) to accelerate delivery and maintain code quality.",
   "education": [
     {
-      "degree": "B.Sc. Computer Science",
-      "school": "PLACEHOLDER University",
-      "dates": "2020 – 2024",
-      "gpa": "3.X/4.0"
-    }
-  ],
-  "skills": {
-    "languages": ["C#", "Java", "Python", "SQL", "JavaScript"],
-    "frameworks": ["ASP.NET Core", "Spring Boot", "FastAPI"],
-    "ai_ml": ["GPT-4 API", "Whisper API", "TTS", "RAG", "Prompt Engineering", "LLM Integration"],
-    "databases": ["PostgreSQL", "Redis", "MongoDB"],
-    "tools": ["Docker", "Git", "GitHub Actions", "Linux", "Prometheus", "Grafana"]
-  },
-  "experience": [
+      "degree": "B.Sc. Computer Engineering",
+      "school": "Bahcesehir University",
+      "location": "Istanbul, Turkey",
+      "dates": "2021 – 2025",
+      "gpa": "3.02/4.00",
+      "highlights": [
+        "Dean's Honor List",
+        "Recipient of ApplyBAU Scholarship (50% tuition)",
+        "Erasmus Exchange Student — University of Applied Sciences Upper Austria, Hagenberg (Feb – July 2024)"
+      ]
+    },
     {
-      "id": "internship-ai-voicebot",
-      "role": "Software Engineering Intern",
-      "company": "PLACEHOLDER Company",
-      "dates": "2024",
-      "bullets": [
-        "Integrated GPT-4 and Whisper APIs into a production voice assistant, reducing end-to-end response latency from 10 seconds to 2-5 seconds",
-        "Designed and implemented streaming TTS pipeline to deliver audio responses incrementally, improving perceived responsiveness",
-        "Built prompt engineering framework to maintain conversation context across multi-turn voice interactions",
-        "Collaborated with product team to define voice assistant capabilities and edge-case handling"
+      "degree": "High School Diploma",
+      "school": "Darussafaka High School",
+      "location": "Istanbul, Turkey",
+      "dates": "2012 – 2021",
+      "gpa": "",
+      "highlights": [
+        "Full scholarship — one of Turkey's most prestigious merit-based institutions, admitted via national entrance exam"
       ]
     }
   ],
-  "projects": []
+  "skills": {
+    "languages": ["C#", "Java", "Python", "C++", "JavaScript", "TypeScript", "SQL", "HTML/CSS"],
+    "frameworks": [".NET Core", "Spring Boot", "FastAPI"],
+    "ai_ml": ["OpenAI API (GPT-4, Whisper, TTS)", "LLM API orchestration", "AI-assisted dev (Cursor, Claude)"],
+    "databases": ["PostgreSQL", "SQL Server", "MongoDB", "EF Core", "Spring Data JPA"],
+    "security": ["JWT (refresh rotation)", "OAuth (Google/Apple Sign-In)", "Spring Security", "AES encryption"],
+    "tools": ["Docker", "Git", "Postman", "REST API Design", "Clean Architecture", "Onion Architecture"]
+  },
+  "experience": [
+    {
+      "id": "internship-mobven",
+      "role": "Backend Developer Intern",
+      "company": "Mobven — Young Talent 2025",
+      "location": "Istanbul, Turkey",
+      "dates": "July 2025 – September 2025",
+      "context": "Shipped Bondly — an AI-powered relationship coach app — to App Store, live in production with real users.",
+      "bullets": [
+        "Integrated OpenAI GPT-4, Whisper, and TTS APIs to enable conversational AI, real-time voice chat, and intelligent message orchestration in a production environment",
+        "Reduced AI audio response latency from 10+ seconds to 2-5 seconds through async pipeline optimization and real-time cut-off handling that updates conversation history when users stop listening",
+        "Designed scalable REST APIs in .NET Core using Clean Architecture; containerized services with Docker for consistent multi-environment deployments",
+        "Implemented secure authentication flows (Google & Apple Sign-In, JWT with refresh rotation) and AES encryption for sensitive payloads and media pipelines (audio/image)",
+        "Optimized PostgreSQL data layer with EF Core migrations, query tuning, and analytics support for conversational workloads",
+        "Built automated media cleanup workflows running every 15 minutes to maintain storage hygiene and ensure stable production performance",
+        "Used Cursor and Claude as AI-assisted development tools throughout the project to accelerate implementation and validate architectural decisions"
+      ]
+    },
+    {
+      "id": "internship-kkb",
+      "role": "Software Engineer Intern — Backend",
+      "company": "Kredi Kayit Burosu (KKB)",
+      "location": "Istanbul, Turkey",
+      "dates": "August 2024 – September 2024",
+      "context": "",
+      "bullets": [
+        "Built backend features for a web-based exam platform using Java Spring Boot, RESTful APIs, and PostgreSQL",
+        "Implemented user authentication and role-based access control with Spring Security, including OTP-based login",
+        "Applied Onion Architecture and DTOs to improve modularity and separation of concerns",
+        "Wrote unit and integration tests; validated API endpoints with Postman in an agile team environment"
+      ]
+    }
+  ],
+  "projects": [],
+  "languages_spoken": [
+    {"language": "Turkish", "level": "Native"},
+    {"language": "English", "level": "Fluent"},
+    {"language": "German", "level": "Basic (Goethe A1)"}
+  ]
 }

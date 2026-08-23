@@ -53,3 +53,25 @@ def test_source_chunk_types():
 
     types = {c.source_type for c in chunks}
     assert types == {"cv_bullet", "project_description", "skill"}
+
+
+def test_context_chunk_included_when_present():
+    cv = load_cv(FIXTURES / "cv.json")
+    cv.experience[0].context = "Shipped a product to production."
+    projects = load_projects(FIXTURES / "projects")
+    chunks = build_source_chunks(cv, projects)
+
+    context_chunks = [c for c in chunks if c.source_type == "cv_context"]
+    assert len(context_chunks) == 1
+    assert "Shipped a product" in context_chunks[0].content
+    assert context_chunks[0].source_id == "internship-alpha:context"
+
+
+def test_context_chunk_skipped_when_empty():
+    cv = load_cv(FIXTURES / "cv.json")
+    assert cv.experience[0].context == ""
+    projects = load_projects(FIXTURES / "projects")
+    chunks = build_source_chunks(cv, projects)
+
+    context_chunks = [c for c in chunks if c.source_type == "cv_context"]
+    assert len(context_chunks) == 0

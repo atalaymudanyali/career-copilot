@@ -11,7 +11,14 @@ class Education(BaseModel):
     degree: str
     school: str
     dates: str
+    location: str = ""
     gpa: str = ""
+    highlights: list[str] = []
+
+
+class SpokenLanguage(BaseModel):
+    language: str
+    level: str
 
 
 class Skills(BaseModel):
@@ -19,6 +26,7 @@ class Skills(BaseModel):
     frameworks: list[str] = []
     ai_ml: list[str] = []
     databases: list[str] = []
+    security: list[str] = []
     tools: list[str] = []
 
 
@@ -27,16 +35,20 @@ class Experience(BaseModel):
     role: str
     company: str
     dates: str
+    location: str = ""
+    context: str = ""
     bullets: list[str]
 
 
 class CV(BaseModel):
     name: str
     contact: ContactInfo
+    summary: str = ""
     education: list[Education] = []
     skills: Skills = Skills()
     experience: list[Experience] = []
     projects: list[str] = []
+    languages_spoken: list[SpokenLanguage] = []
 
 
 class Project(BaseModel):
