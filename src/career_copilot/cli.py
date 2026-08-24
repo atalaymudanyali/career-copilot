@@ -2,6 +2,7 @@ import asyncio
 import sys
 from pathlib import Path
 
+import httpx
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -52,6 +53,27 @@ def render_result(result: TailoringResult) -> None:
         console.print(gap_table)
 
 
+def _read_jd(jd: Path | None) -> str:
+    if jd:
+        return jd.read_text(encoding="utf-8")
+    if not sys.stdin.isatty():
+        return sys.stdin.read()
+    console.print(
+        "[yellow]Paste the job description below, then press Ctrl+Z and Enter (EOF):[/yellow]"
+    )
+    return sys.stdin.read()
+
+
+def _tailor_via_api(job_description: str, api_url: str) -> TailoringResult:
+    response = httpx.post(
+        f"{api_url.rstrip('/')}/tailor",
+        json={"job_description": job_description},
+        timeout=120.0,
+    )
+    response.raise_for_status()
+    return TailoringResult.model_validate(response.json())
+
+
 @app.command("tailor")
 def tailor_cmd(
     jd: Path | None = typer.Option(
@@ -66,36 +88,46 @@ def tailor_cmd(
         "-m",
         help="Override the Ollama model to use.",
     ),
+    api: bool = typer.Option(
+        False,
+        "--api",
+        help="Use the FastAPI backend instead of local inference.",
+    ),
+    api_url: str = typer.Option(
+        "http://localhost:8000",
+        "--api-url",
+        help="Base URL of the Career Copilot API.",
+    ),
 ) -> None:
     """Tailor CV bullets to a job description."""
-    if jd:
-        job_description = jd.read_text(encoding="utf-8")
-    elif not sys.stdin.isatty():
-        job_description = sys.stdin.read()
-    else:
-        console.print(
-            "[yellow]Paste the job description below, then press Ctrl+Z and Enter (EOF):[/yellow]"
-        )
-        job_description = sys.stdin.read()
-
-    job_description = job_description.strip()
+    job_description = _read_jd(jd).strip()
     if not job_description:
         console.print("[red]Error: empty job description.[/red]")
         raise typer.Exit(1)
 
-    client = OllamaClient(model=model) if model else None
+    if api:
+        with console.status("[bold green]Calling API...[/bold green]"):
+            try:
+                result = _tailor_via_api(job_description, api_url)
+            except httpx.HTTPError as e:
+                console.print(f"[red]API error: {e}[/red]")
+                raise typer.Exit(1)
+    else:
+        client = OllamaClient(model=model) if model else None
 
-    with console.status("[bold green]Checking Ollama connection...[/bold green]"):
-        llm = client or OllamaClient()
-        healthy = asyncio.run(llm.health_check())
-        if not healthy:
-            console.print(
-                f"[red]Error: cannot connect to Ollama at {llm.base_url}. Is it running?[/red]"
-            )
-            raise typer.Exit(1)
+        with console.status("[bold green]Checking Ollama connection...[/bold green]"):
+            llm = client or OllamaClient()
+            healthy = asyncio.run(llm.health_check())
+            if not healthy:
+                console.print(
+                    f"[red]Error: cannot connect to Ollama at {llm.base_url}. Is it running?[/red]"
+                )
+                raise typer.Exit(1)
 
-    with console.status("[bold green]Tailoring your CV... (this may take a moment)[/bold green]"):
-        result = asyncio.run(tailor(job_description, client=client))
+        with console.status(
+            "[bold green]Tailoring your CV... (this may take a moment)[/bold green]"
+        ):
+            result = asyncio.run(tailor(job_description, client=client))
 
     render_result(result)
 
