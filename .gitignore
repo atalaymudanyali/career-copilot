@@ -20,3 +20,6 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal study notes
+docs/commit-explanations.md
