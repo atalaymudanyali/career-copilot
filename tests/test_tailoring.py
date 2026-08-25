@@ -1,4 +1,4 @@
-from career_copilot.models.domain import TailoredBullet, TailoringResult
+from career_copilot.models.domain import SourceChunk, TailoredBullet, TailoringResult
 from career_copilot.services.tailoring import validate_source_ids
 
 
@@ -62,3 +62,21 @@ def test_tailoring_result_defaults():
     result = TailoringResult.model_validate(raw)
     assert result.gaps == []
     assert result.tailored_bullets == []
+
+
+def test_validate_source_ids_accepts_filler_ids():
+    relevant = [
+        SourceChunk(source_id="exp1:bullet:0", source_type="cv_bullet", content="API work"),
+    ]
+    fillers = [
+        SourceChunk(source_id="exp2:bullet:0", source_type="cv_bullet", content="Java work"),
+    ]
+    all_valid_ids = {c.source_id for c in relevant + fillers}
+
+    bullets = [
+        TailoredBullet(text="Built APIs", source_id="exp1:bullet:0", relevance="high"),
+        TailoredBullet(text="Used Java", source_id="exp2:bullet:0", relevance="low"),
+    ]
+    valid, invalid = validate_source_ids(bullets, all_valid_ids)
+    assert len(valid) == 2
+    assert len(invalid) == 0

@@ -6,7 +6,11 @@ from career_copilot.models.domain import (
     TailoredBullet,
     TailoringResult,
 )
-from career_copilot.prompts.templates import SYSTEM_PROMPT, build_user_prompt
+from career_copilot.prompts.templates import (
+    SYSTEM_PROMPT,
+    build_user_prompt,
+    build_user_prompt_with_fillers,
+)
 from career_copilot.services.data_loader import build_source_chunks, load_cv, load_projects
 from career_copilot.services.llm import OllamaClient
 
@@ -69,16 +73,26 @@ async def tailor_rag(
     job_description: str,
     chunks: list[SourceChunk],
     client: OllamaClient | None = None,
+    filler_chunks: list[SourceChunk] | None = None,
 ) -> TailoringResult:
     llm = client or OllamaClient()
 
-    valid_source_ids = {chunk.source_id for chunk in chunks}
+    all_chunks = chunks + (filler_chunks or [])
+    valid_source_ids = {chunk.source_id for chunk in all_chunks}
 
     chunks_json = json.dumps(
         [chunk.model_dump() for chunk in chunks],
         indent=2,
     )
-    user_prompt = build_user_prompt(chunks_json, job_description)
+
+    if filler_chunks:
+        filler_json = json.dumps(
+            [chunk.model_dump() for chunk in filler_chunks],
+            indent=2,
+        )
+        user_prompt = build_user_prompt_with_fillers(chunks_json, filler_json, job_description)
+    else:
+        user_prompt = build_user_prompt(chunks_json, job_description)
 
     raw_response = await llm.chat(
         system_prompt=SYSTEM_PROMPT,

@@ -29,6 +29,11 @@ OUTPUT FORMAT (strict JSON):
   "gaps": ["skill or requirement from the JD not found in source chunks"]
 }
 
+6. PAGE FILL: The CV must fill a full page. Include a tailored bullet for EVERY \
+source chunk provided, even those less related to the JD. For less relevant chunks, \
+keep the wording close to the original and mark relevance as "low". \
+A short CV hurts the candidate more than having some lower-relevance bullets.
+
 Order tailored_bullets from most relevant to least relevant for this specific job.\
 """
 
@@ -48,5 +53,37 @@ Here is the job description to tailor for:
 ---
 
 Produce the tailored output as JSON. Remember: every bullet must have a valid source_id, \
+and anything the job asks for that isn't in the source chunks goes in "gaps".\
+"""
+
+
+def build_user_prompt_with_fillers(
+    relevant_chunks_json: str,
+    filler_chunks_json: str,
+    job_description: str,
+) -> str:
+    return f"""\
+RELEVANT source chunks (most related to this job — prioritize and rephrase these):
+
+{relevant_chunks_json}
+
+---
+
+ADDITIONAL source chunks (include these to fill the CV page — keep wording close to original):
+
+{filler_chunks_json}
+
+---
+
+Here is the job description to tailor for:
+
+{job_description}
+
+---
+
+Produce the tailored output as JSON. You MUST include a bullet for every source chunk \
+from BOTH sections above. Relevant chunks should be rephrased to emphasize the job fit. \
+Additional chunks should be kept close to the original wording with relevance "low". \
+Every bullet must have a valid source_id, \
 and anything the job asks for that isn't in the source chunks goes in "gaps".\
 """

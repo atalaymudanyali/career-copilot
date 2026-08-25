@@ -14,7 +14,7 @@ from career_copilot.services.applications import (
 )
 from career_copilot.services.pdf import generate_cv_pdf
 from career_copilot.services.retrieval import retrieve
-from career_copilot.services.tailoring import tailor_rag
+from career_copilot.services.tailoring import get_source_chunks, tailor_rag
 from career_copilot.templating import templates
 
 router = APIRouter(tags=["dashboard"])
@@ -133,7 +133,10 @@ async def dashboard_tailor(
         return HTMLResponse("Not found", status_code=404)
 
     chunks = await retrieve(application.jd_text, session)
-    result = await tailor_rag(application.jd_text, chunks)
+    all_chunks = get_source_chunks()
+    retrieved_ids = {c.source_id for c in chunks}
+    filler_chunks = [c for c in all_chunks if c.source_id not in retrieved_ids]
+    result = await tailor_rag(application.jd_text, chunks, filler_chunks=filler_chunks)
     await store_tailoring_result(session, application, result.model_dump())
 
     is_htmx = request.headers.get("HX-Request") == "true"
