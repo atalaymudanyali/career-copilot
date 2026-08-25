@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from career_copilot.db import get_session
-from career_copilot.models.domain import ApplicationCreate
-from career_copilot.services.applications import create_application, list_applications
+from career_copilot.models.domain import ApplicationCreate, ApplicationStatus, ApplicationUpdate
+from career_copilot.services.applications import (
+    create_application,
+    delete_application,
+    get_application,
+    list_applications,
+    update_application,
+)
 from career_copilot.templating import templates
 
 router = APIRouter(tags=["dashboard"])
@@ -50,3 +57,55 @@ async def dashboard_create(
         "dashboard/list.html",
         {"applications": await list_applications(session)},
     )
+
+
+@router.get("/dashboard/{application_id}")
+async def dashboard_detail(
+    request: Request,
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return templates.TemplateResponse(request, "dashboard/404.html", status_code=404)
+    statuses = [s.value for s in ApplicationStatus]
+    return templates.TemplateResponse(
+        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+    )
+
+
+@router.patch("/dashboard/{application_id}")
+async def dashboard_update(
+    request: Request,
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    form_data = await request.form()
+    update_fields = {}
+    for field in ("status", "notes", "company", "role", "jd_text", "url"):
+        if field in form_data:
+            value = form_data[field]
+            update_fields[field] = value if value != "" else None
+
+    data = ApplicationUpdate(**update_fields)
+    application = await update_application(session, application, data)
+
+    statuses = [s.value for s in ApplicationStatus]
+    return templates.TemplateResponse(
+        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+    )
+
+
+@router.delete("/dashboard/{application_id}")
+async def dashboard_delete(
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if application:
+        await delete_application(session, application)
+    return RedirectResponse(url="/dashboard", status_code=303)
