@@ -1,5 +1,8 @@
 import json
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
+
+import httpx
+import pytest
 
 from career_copilot.models.domain import (
     CV,
@@ -10,6 +13,8 @@ from career_copilot.models.domain import (
     Skills,
     SourceChunk,
     SpokenLanguage,
+    TailoredBullet,
+    TailoringResult,
 )
 
 
@@ -137,3 +142,85 @@ def test_list_source_chunks_has_required_fields(mock_cv, mock_projects, mock_bui
         assert "source_id" in chunk
         assert "source_type" in chunk
         assert "content" in chunk
+
+
+def _sample_tailoring_result():
+    return TailoringResult(
+        tailored_bullets=[
+            TailoredBullet(
+                text="Developed REST APIs using FastAPI",
+                source_id="exp1:bullet:0",
+                relevance="high",
+            ),
+            TailoredBullet(
+                text="Proficient in Python and Java",
+                source_id="skills:all",
+                relevance="medium",
+            ),
+        ],
+        why_i_fit="Strong backend experience with Python and API development.",
+        gaps=["Kubernetes", "GraphQL"],
+    )
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.mcp_server.tailor")
+async def test_tailor_cv_returns_bullets(mock_tailor):
+    from career_copilot.mcp_server import tailor_cv
+
+    mock_tailor.return_value = _sample_tailoring_result()
+    result = await tailor_cv("We need a backend developer with Python")
+    assert "Tailored Bullets" in result
+    assert "Developed REST APIs" in result
+    assert "exp1:bullet:0" in result
+    assert "HIGH" in result
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.mcp_server.tailor")
+async def test_tailor_cv_includes_why_and_gaps(mock_tailor):
+    from career_copilot.mcp_server import tailor_cv
+
+    mock_tailor.return_value = _sample_tailoring_result()
+    result = await tailor_cv("Backend developer role")
+    assert "Why I Fit" in result
+    assert "Strong backend" in result
+    assert "Gaps" in result
+    assert "Kubernetes" in result
+    assert "GraphQL" in result
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.mcp_server.tailor", side_effect=httpx.ConnectError(""))
+async def test_tailor_cv_ollama_unavailable(mock_tailor):
+    from career_copilot.mcp_server import tailor_cv
+
+    result = await tailor_cv("Any JD")
+    assert "Cannot connect to Ollama" in result
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.mcp_server.OllamaClient")
+@patch("career_copilot.mcp_server.load_cv")
+async def test_analyze_skill_gaps_returns_response(mock_cv, mock_llm_cls):
+    from career_copilot.mcp_server import analyze_skill_gaps
+
+    mock_cv.return_value = _sample_cv()
+    mock_llm = AsyncMock()
+    mock_llm.chat.return_value = "## Must-have gaps\n- Kubernetes"
+    mock_llm_cls.return_value = mock_llm
+
+    result = await analyze_skill_gaps("Need 3+ years Kubernetes experience")
+    assert "Kubernetes" in result
+
+
+@pytest.mark.asyncio
+@patch(
+    "career_copilot.mcp_server.OllamaClient",
+    side_effect=httpx.ConnectError(""),
+)
+async def test_analyze_skill_gaps_ollama_unavailable(mock_llm_cls):
+    from career_copilot.mcp_server import analyze_skill_gaps
+
+    result = await analyze_skill_gaps("Any JD")
+    assert "Cannot connect to Ollama" in result

@@ -1,7 +1,9 @@
 import json
 
 from career_copilot.prompts.templates import (
+    SKILL_GAP_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
+    build_skill_gap_prompt,
     build_user_prompt,
     build_user_prompt_with_fillers,
 )
@@ -48,3 +50,21 @@ def test_build_user_prompt_with_fillers_instructs_inclusion():
 
     prompt = build_user_prompt_with_fillers(relevant, fillers, "test jd")
     assert "MUST include" in prompt or "every source chunk" in prompt.lower()
+
+
+def test_skill_gap_system_prompt_contains_categories():
+    assert "Must-have gaps" in SKILL_GAP_SYSTEM_PROMPT
+    assert "Nice-to-have gaps" in SKILL_GAP_SYSTEM_PROMPT
+    assert "Experience gaps" in SKILL_GAP_SYSTEM_PROMPT
+
+
+def test_build_skill_gap_prompt_includes_all_sections():
+    prompt = build_skill_gap_prompt(
+        "languages: Python, Java",
+        "- Backend Developer at TestCorp (2025-Present)",
+        "Looking for a senior Go developer with Kubernetes",
+    )
+    assert "Python, Java" in prompt
+    assert "Backend Developer" in prompt
+    assert "Go developer" in prompt
+    assert "Kubernetes" in prompt

@@ -87,3 +87,46 @@ Additional chunks should be kept close to the original wording with relevance "l
 Every bullet must have a valid source_id, \
 and anything the job asks for that isn't in the source chunks goes in "gaps".\
 """
+
+
+SKILL_GAP_SYSTEM_PROMPT = """\
+You are a career advisor. Given a candidate's skills and experience, analyze \
+a job description and identify specific gaps — skills, tools, certifications, \
+or experience the job asks for that the candidate does not have.
+
+Be concrete and actionable. Group gaps into categories:
+- **Must-have gaps**: requirements explicitly listed as required/mandatory
+- **Nice-to-have gaps**: preferred/bonus qualifications the candidate lacks
+- **Experience gaps**: years or seniority levels the candidate falls short on
+
+For each gap, briefly suggest how the candidate could address it \
+(online course, side project, certification, etc.).\
+"""
+
+
+def build_skill_gap_prompt(
+    skills_summary: str,
+    experience_summary: str,
+    job_description: str,
+) -> str:
+    return f"""\
+Candidate's skills:
+
+{skills_summary}
+
+---
+
+Candidate's experience:
+
+{experience_summary}
+
+---
+
+Job description to analyze:
+
+{job_description}
+
+---
+
+Identify the gaps between what the candidate has and what the job requires.\
+"""
