@@ -1,3 +1,6 @@
+from datetime import datetime
+from enum import StrEnum
+
 from pydantic import BaseModel
 
 
@@ -77,3 +80,42 @@ class TailoringResult(BaseModel):
     tailored_bullets: list[TailoredBullet]
     why_i_fit: str
     gaps: list[str] = []
+
+
+class ApplicationStatus(StrEnum):
+    SAVED = "saved"
+    APPLIED = "applied"
+    INTERVIEWING = "interviewing"
+    OFFERED = "offered"
+    REJECTED = "rejected"
+
+
+class ApplicationCreate(BaseModel):
+    company: str
+    role: str
+    jd_text: str
+    url: str | None = None
+    notes: str | None = None
+
+
+class ApplicationUpdate(BaseModel):
+    company: str | None = None
+    role: str | None = None
+    status: ApplicationStatus | None = None
+    jd_text: str | None = None
+    url: str | None = None
+    notes: str | None = None
+
+
+class ApplicationResponse(BaseModel):
+    id: int
+    company: str
+    role: str
+    status: str
+    jd_text: str
+    url: str | None
+    notes: str | None
+    tailoring_result: TailoringResult | None = None
+    applied_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
