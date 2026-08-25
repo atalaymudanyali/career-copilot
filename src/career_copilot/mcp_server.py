@@ -13,9 +13,7 @@ from career_copilot.services.tailoring import tailor
 
 mcp = MCPServer("Career Copilot")
 
-OLLAMA_UNAVAILABLE = (
-    "Cannot connect to Ollama. Make sure it is running with: ollama serve"
-)
+OLLAMA_UNAVAILABLE = "Cannot connect to Ollama. Make sure it is running with: ollama serve"
 
 
 @mcp.tool()
