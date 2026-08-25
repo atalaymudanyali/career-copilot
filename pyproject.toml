@@ -1,6 +1,6 @@
 [project]
 name = "career-copilot"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI-powered career copilot that tailors CV bullets to job descriptions using only real experience"
 readme = "README.md"
 authors = [
@@ -24,10 +24,12 @@ dependencies = [
     "jinja2>=3.1",
     "python-multipart>=0.0.9",
     "weasyprint>=63",
+    "mcp[cli]>=1.0",
 ]
 
 [project.scripts]
 career-copilot = "career_copilot.cli:app"
+career-copilot-mcp = "career_copilot.mcp_server:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
