@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Applications — Career Copilot{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Applications</h1>
+    <button onclick="document.getElementById('create-form').classList.toggle('hidden')"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+        + New Application
+    </button>
+</div>
+
+<div id="create-form" class="hidden mb-6">
+    {% include "dashboard/_form_create.html" %}
+</div>
+
+{% if applications %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th class="text-left px-4 py-3 text-sm font-medium text-gray-500">Company</th>
+                <th class="text-left px-4 py-3 text-sm font-medium text-gray-500">Role</th>
+                <th class="text-left px-4 py-3 text-sm font-medium text-gray-500">Status</th>
+                <th class="text-left px-4 py-3 text-sm font-medium text-gray-500">Created</th>
+                <th class="text-left px-4 py-3 text-sm font-medium text-gray-500"></th>
+            </tr>
+        </thead>
+        <tbody id="app-list">
+            {% for app in applications %}
+            {% include "dashboard/_app_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-12 text-gray-500">
+    <p class="text-lg mb-2">No applications yet</p>
+    <p class="text-sm">Click "New Application" to track your first job application.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+<tr class="border-b border-gray-100 hover:bg-gray-50">
+    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ app.company }}</td>
+    <td class="px-4 py-3 text-sm text-gray-700">{{ app.role }}</td>
+    <td class="px-4 py-3">
+        {% set status_colors = {
+            "saved": "bg-gray-100 text-gray-700",
+            "applied": "bg-blue-100 text-blue-700",
+            "interviewing": "bg-yellow-100 text-yellow-700",
+            "offered": "bg-green-100 text-green-700",
+            "rejected": "bg-red-100 text-red-700"
+        } %}
+        <span class="inline-block px-2 py-1 rounded-full text-xs font-medium {{ status_colors.get(app.status, 'bg-gray-100 text-gray-700') }}">
+            {{ app.status }}
+        </span>
+    </td>
+    <td class="px-4 py-3 text-sm text-gray-500">{{ app.created_at.strftime('%b %d, %Y') if app.created_at else '' }}</td>
+    <td class="px-4 py-3 text-sm">
+        <a href="/dashboard/{{ app.id }}" class="text-blue-600 hover:text-blue-800 font-medium">View</a>
+    </td>
+</tr>
