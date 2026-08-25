@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from career_copilot.db import get_session
@@ -12,6 +12,7 @@ from career_copilot.services.applications import (
     store_tailoring_result,
     update_application,
 )
+from career_copilot.services.pdf import generate_cv_pdf
 from career_copilot.services.retrieval import retrieve
 from career_copilot.services.tailoring import tailor_rag
 from career_copilot.templating import templates
@@ -126,6 +127,24 @@ async def dashboard_tailor(
     statuses = [s.value for s in ApplicationStatus]
     return templates.TemplateResponse(
         request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+    )
+
+
+@router.get("/dashboard/{application_id}/cv.pdf")
+async def download_cv_pdf(
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application or not application.tailoring_result:
+        return HTMLResponse("Application not found or not yet tailored", status_code=404)
+
+    pdf_bytes = generate_cv_pdf(application.tailoring_result, application.company, application.role)
+    filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
     )
 
 

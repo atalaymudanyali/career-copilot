@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cv.name }} — CV</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.2cm 1.6cm;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.35;
+            color: #1A1A1A;
+        }
+
+        a {
+            color: #1F4E78;
+            text-decoration: underline;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 6pt;
+        }
+
+        .header h1 {
+            font-size: 26pt;
+            font-weight: bold;
+            color: #1A1A1A;
+            margin-bottom: 4pt;
+        }
+
+        .contact-line {
+            font-size: 9.5pt;
+            color: #444;
+        }
+
+        .contact-line a {
+            color: #1F4E78;
+            text-decoration: underline;
+            font-size: 9.5pt;
+        }
+
+        .sep {
+            margin: 0 2pt;
+            color: #444;
+        }
+
+        /* ── Section titles ── */
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #1F4E78;
+            border-bottom: 1pt solid #1F4E78;
+            padding-bottom: 2pt;
+            margin-top: 8pt;
+            margin-bottom: 4pt;
+        }
+
+        /* ── Experience ── */
+        .exp-line1 {
+            font-size: 11pt;
+            margin-bottom: 0pt;
+        }
+
+        .exp-role {
+            font-weight: bold;
+            color: #1A1A1A;
+        }
+
+        .exp-pipe {
+            color: #444;
+            font-weight: normal;
+            margin: 0 2pt;
+        }
+
+        .exp-company {
+            color: #1F4E78;
+            font-weight: normal;
+        }
+
+        .exp-location {
+            color: #444;
+            font-weight: normal;
+            font-size: 10pt;
+        }
+
+        .exp-dates {
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 2pt;
+        }
+
+        .exp-context {
+            font-size: 10pt;
+            color: #1A1A1A;
+            margin-bottom: 1pt;
+        }
+
+        .bullet-list {
+            list-style: none;
+            padding-left: 15pt;
+        }
+
+        .bullet-list li {
+            margin-bottom: 1pt;
+            text-indent: -12pt;
+            padding-left: 0pt;
+        }
+
+        .bullet-list li::before {
+            content: "\2022\00a0\00a0";
+            color: black;
+        }
+
+        /* ── Education ── */
+        .edu-line1 {
+            font-size: 11pt;
+            margin-bottom: 0pt;
+        }
+
+        .edu-degree {
+            font-weight: bold;
+            color: #1A1A1A;
+        }
+
+        .edu-school {
+            color: #1F4E78;
+            font-weight: normal;
+        }
+
+        .edu-dates {
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 1pt;
+        }
+
+        .edu-highlights {
+            list-style: none;
+            padding-left: 15pt;
+            color: #1A1A1A;
+        }
+
+        .edu-highlights li {
+            margin-bottom: 0pt;
+            text-indent: -12pt;
+        }
+
+        .edu-highlights li::before {
+            content: "\2022\00a0\00a0";
+            color: black;
+        }
+
+        /* ── Skills ── */
+        .skill-row {
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #1A1A1A;
+        }
+
+        .skill-label {
+            font-weight: bold;
+            color: #1A1A1A;
+        }
+
+        /* ── Languages ── */
+        .lang-row {
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #1A1A1A;
+        }
+
+        .lang-label {
+            font-weight: bold;
+            color: #1A1A1A;
+        }
+
+        /* ── Summary ── */
+        .summary-text {
+            font-size: 10pt;
+            color: #1A1A1A;
+            line-height: 1.4;
+        }
+
+        /* ── Spacing ── */
+        .entry + .entry {
+            margin-top: 5pt;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>{{ cv.name }}</h1>
+    <div class="contact-line">
+        <span>{{ cv.contact.email }}</span>
+        {% if cv.contact.linkedin %}
+        <span class="sep">&bull;</span>
+        <a href="{{ cv.contact.linkedin }}">{{ cv.contact.linkedin.replace("https://", "") }}</a>
+        {% endif %}
+        {% if cv.contact.github %}
+        <span class="sep">&bull;</span>
+        <a href="{{ cv.contact.github }}">{{ cv.contact.github.replace("https://", "") }}</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary -->
+{% if why_i_fit %}
+<div class="section-title">Summary</div>
+<p class="summary-text">{{ why_i_fit }}</p>
+{% elif cv.summary %}
+<div class="section-title">Summary</div>
+<p class="summary-text">{{ cv.summary }}</p>
+{% endif %}
+
+<!-- Experience -->
+{% if cv.experience %}
+<div class="section-title">Experience</div>
+{% for exp in cv.experience %}
+<div class="entry">
+    <div class="exp-line1">
+        <span class="exp-role">{{ exp.role }}</span>
+        <span class="exp-pipe">|</span>
+        <span class="exp-company">{{ exp.company }}</span>
+        <span class="exp-pipe">|</span>
+        <span class="exp-location">{{ exp.location }}</span>
+    </div>
+    <div class="exp-dates">{{ exp.dates }}</div>
+    {% if exp.context %}
+    <div class="exp-context">{{ exp.context }}</div>
+    {% endif %}
+    <ul class="bullet-list">
+        {% if bullets_by_source.get(exp.id) %}
+            {% for bullet_text in bullets_by_source[exp.id] %}
+            <li>{{ bullet_text }}</li>
+            {% endfor %}
+        {% else %}
+            {% for bullet_text in exp.bullets %}
+            <li>{{ bullet_text }}</li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Education -->
+{% if cv.education %}
+<div class="section-title">Education</div>
+{% for edu in cv.education %}
+<div class="entry">
+    <div class="edu-line1">
+        <span class="edu-degree">{{ edu.degree }}</span>
+        <span class="exp-pipe">|</span>
+        <span class="edu-school">{{ edu.school }}</span>
+        <span class="exp-pipe">|</span>
+        <span class="exp-location">{{ edu.location }}</span>
+    </div>
+    <div class="edu-dates">{{ edu.dates }}</div>
+    {% if edu.highlights %}
+    <ul class="edu-highlights">
+        {% for h in edu.highlights %}
+        <li>{{ h }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Skills -->
+{% if cv.skills %}
+<div class="section-title">Skills</div>
+{% if cv.skills.languages or cv.skills.frameworks %}
+<div class="skill-row"><span class="skill-label">Backend:</span> {{ (cv.skills.languages + cv.skills.frameworks) | join(", ") }}</div>
+{% endif %}
+{% if cv.skills.ai_ml %}
+<div class="skill-row"><span class="skill-label">AI & LLM:</span> {{ cv.skills.ai_ml | join(", ") }}</div>
+{% endif %}
+{% if cv.skills.databases %}
+<div class="skill-row"><span class="skill-label">Databases:</span> {{ cv.skills.databases | join(", ") }}</div>
+{% endif %}
+{% if cv.skills.security %}
+<div class="skill-row"><span class="skill-label">Security:</span> {{ cv.skills.security | join(", ") }}</div>
+{% endif %}
+{% if cv.skills.tools %}
+<div class="skill-row"><span class="skill-label">Tools:</span> {{ cv.skills.tools | join(", ") }}</div>
+{% endif %}
+{% endif %}
+
+<!-- Languages & Interests -->
+{% if cv.languages_spoken %}
+<div class="section-title">Languages & Interests</div>
+<div class="lang-row">
+    <span class="lang-label">Languages:</span>
+    {% for lang in cv.languages_spoken %}
+    {{ lang.language }} ({{ lang.level }}){% if not loop.last %},{% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+</body>
+</html>
