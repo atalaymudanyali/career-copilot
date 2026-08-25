@@ -36,6 +36,15 @@ async def update_application(
     return application
 
 
+async def store_tailoring_result(
+    session: AsyncSession, application: Application, result: dict
+) -> Application:
+    application.tailoring_result = result
+    await session.commit()
+    await session.refresh(application)
+    return application
+
+
 async def delete_application(session: AsyncSession, application: Application) -> None:
     await session.delete(application)
     await session.commit()

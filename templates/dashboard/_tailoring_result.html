@@ -1,0 +1,66 @@
+<div class="space-y-4">
+    <h2 class="text-sm font-medium text-gray-500">Tailored CV Bullets</h2>
+
+    {% set result = app.tailoring_result %}
+
+    {% if result.get("tailored_bullets") %}
+    <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="text-left px-4 py-2 text-xs font-medium text-gray-500">Bullet</th>
+                    <th class="text-left px-4 py-2 text-xs font-medium text-gray-500 w-32">Source</th>
+                    <th class="text-left px-4 py-2 text-xs font-medium text-gray-500 w-24">Relevance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bullet in result["tailored_bullets"] %}
+                <tr class="border-b border-gray-100">
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ bullet["text"] }}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 font-mono">{{ bullet["source_id"] }}</td>
+                    <td class="px-4 py-3">
+                        {% set rel_colors = {
+                            "high": "bg-green-100 text-green-700",
+                            "medium": "bg-yellow-100 text-yellow-700",
+                            "low": "bg-gray-100 text-gray-700"
+                        } %}
+                        <span class="inline-block px-2 py-1 rounded-full text-xs font-medium {{ rel_colors.get(bullet.get('relevance', 'medium'), 'bg-gray-100 text-gray-700') }}">
+                            {{ bullet.get("relevance", "medium") }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if result.get("why_i_fit") %}
+    <div>
+        <h3 class="text-sm font-medium text-gray-500 mb-1">Why I'm a Good Fit</h3>
+        <p class="text-sm text-gray-700 bg-blue-50 rounded-md p-3">{{ result["why_i_fit"] }}</p>
+    </div>
+    {% endif %}
+
+    {% if result.get("gaps") and result["gaps"]|length > 0 %}
+    <div>
+        <h3 class="text-sm font-medium text-gray-500 mb-1">Gaps to Address</h3>
+        <ul class="list-disc list-inside text-sm text-gray-700 bg-red-50 rounded-md p-3">
+            {% for gap in result["gaps"] %}
+            <li>{{ gap }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="pt-2">
+        <button hx-post="/dashboard/{{ app.id }}/tailor"
+                hx-target="closest div.space-y-4"
+                hx-swap="outerHTML"
+                hx-indicator="#tailor-spinner"
+                class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            Re-tailor
+        </button>
+        <span id="tailor-spinner" class="htmx-indicator text-sm text-gray-400 ml-2">Tailoring...</span>
+    </div>
+</div>

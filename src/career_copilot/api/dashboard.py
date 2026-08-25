@@ -9,8 +9,11 @@ from career_copilot.services.applications import (
     delete_application,
     get_application,
     list_applications,
+    store_tailoring_result,
     update_application,
 )
+from career_copilot.services.retrieval import retrieve
+from career_copilot.services.tailoring import tailor_rag
 from career_copilot.templating import templates
 
 router = APIRouter(tags=["dashboard"])
@@ -93,6 +96,32 @@ async def dashboard_update(
 
     data = ApplicationUpdate(**update_fields)
     application = await update_application(session, application, data)
+
+    statuses = [s.value for s in ApplicationStatus]
+    return templates.TemplateResponse(
+        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+    )
+
+
+@router.post("/dashboard/{application_id}/tailor")
+async def dashboard_tailor(
+    request: Request,
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    chunks = await retrieve(application.jd_text, session)
+    result = await tailor_rag(application.jd_text, chunks)
+    await store_tailoring_result(session, application, result.model_dump())
+
+    is_htmx = request.headers.get("HX-Request") == "true"
+    if is_htmx:
+        return templates.TemplateResponse(
+            request, "dashboard/_tailoring_result.html", {"app": application}
+        )
 
     statuses = [s.value for s in ApplicationStatus]
     return templates.TemplateResponse(
