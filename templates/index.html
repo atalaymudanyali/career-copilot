@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Career Copilot — AI-Powered CV Tailoring{% endblock %}
+
+{% block content %}
+<div class="text-center py-16">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Career Copilot</h1>
+    <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+        AI-powered CV tailoring grounded in real experience.
+        Track your applications, tailor your CV to each job description, and generate professional PDFs.
+    </p>
+    <div class="flex justify-center gap-4">
+        <a href="/dashboard"
+           class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+            Open Dashboard
+        </a>
+        <a href="/docs"
+           class="bg-white text-gray-700 px-6 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 transition">
+            API Documentation
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-2">Track Applications</h3>
+        <p class="text-gray-600 text-sm">
+            Save job descriptions, track application status from saved through offered,
+            and keep notes on each opportunity.
+        </p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-2">Tailor Your CV</h3>
+        <p class="text-gray-600 text-sm">
+            RAG-powered tailoring matches your real experience to each job description.
+            Never invents — only rephrases what you've actually done.
+        </p>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="font-semibold text-gray-900 mb-2">Generate PDFs</h3>
+        <p class="text-gray-600 text-sm">
+            Download a professional CV document with tailored bullets,
+            ready to submit with your application.
+        </p>
+    </div>
+</div>
+{% endblock %}

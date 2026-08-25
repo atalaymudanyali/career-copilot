@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from career_copilot.api.applications import router as applications_router
+from career_copilot.api.dashboard import router as dashboard_router
 from career_copilot.api.health import router as health_router
 from career_copilot.api.ingest import router as ingest_router
 from career_copilot.api.tailor import router as tailor_router
@@ -15,3 +16,4 @@ app.include_router(health_router)
 app.include_router(ingest_router)
 app.include_router(tailor_router)
 app.include_router(applications_router)
+app.include_router(dashboard_router)
