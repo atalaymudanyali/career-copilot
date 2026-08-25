@@ -4,11 +4,35 @@
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Applications</h1>
-    <button onclick="document.getElementById('create-form').classList.toggle('hidden')"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
-        + New Application
-    </button>
+    <div class="flex items-center gap-4">
+        <h1 class="text-2xl font-bold text-gray-900">Applications</h1>
+        <div class="flex items-center gap-2">
+            <a href="/dashboard"
+               class="px-3 py-1 rounded-full text-xs font-medium transition {{ 'bg-blue-600 text-white' if not status_filter else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+                All
+            </a>
+            {% for s in ["saved", "applied", "interviewing", "offered", "rejected"] %}
+            {% set pill_colors = {
+                "saved": "bg-gray-600 text-white" if status_filter == s else "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                "applied": "bg-blue-600 text-white" if status_filter == s else "bg-blue-50 text-blue-600 hover:bg-blue-100",
+                "interviewing": "bg-yellow-500 text-white" if status_filter == s else "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",
+                "offered": "bg-green-600 text-white" if status_filter == s else "bg-green-50 text-green-600 hover:bg-green-100",
+                "rejected": "bg-red-600 text-white" if status_filter == s else "bg-red-50 text-red-600 hover:bg-red-100"
+            } %}
+            <a href="/dashboard?status={{ s }}"
+               class="px-3 py-1 rounded-full text-xs font-medium capitalize transition {{ pill_colors[s] }}">
+                {{ s }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="/dashboard/pipeline" class="text-sm text-gray-600 hover:text-gray-900 font-medium">Pipeline View</a>
+        <button onclick="document.getElementById('create-form').classList.toggle('hidden')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+            + New Application
+        </button>
+    </div>
 </div>
 
 <div id="create-form" class="hidden mb-6">

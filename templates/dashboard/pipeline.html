@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline — Career Copilot{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Pipeline</h1>
+    <a href="/dashboard" class="text-sm text-gray-600 hover:text-gray-900 font-medium">Switch to List View</a>
+</div>
+
+{% set status_styles = {
+    "saved": {"bg": "bg-gray-50", "border": "border-gray-300", "header_bg": "bg-gray-200", "header_text": "text-gray-700", "dot": "bg-gray-400"},
+    "applied": {"bg": "bg-blue-50", "border": "border-blue-300", "header_bg": "bg-blue-200", "header_text": "text-blue-800", "dot": "bg-blue-500"},
+    "interviewing": {"bg": "bg-yellow-50", "border": "border-yellow-300", "header_bg": "bg-yellow-200", "header_text": "text-yellow-800", "dot": "bg-amber-500"},
+    "offered": {"bg": "bg-green-50", "border": "border-green-300", "header_bg": "bg-green-200", "header_text": "text-green-800", "dot": "bg-green-500"},
+    "rejected": {"bg": "bg-red-50", "border": "border-red-300", "header_bg": "bg-red-200", "header_text": "text-red-800", "dot": "bg-red-500"}
+} %}
+
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    {% for status in statuses %}
+    {% set style = status_styles.get(status, status_styles["saved"]) %}
+    <div class="rounded-lg border {{ style.border }} {{ style.bg }} min-h-[200px]">
+        <div class="px-3 py-2 {{ style.header_bg }} rounded-t-lg flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full {{ style.dot }}"></span>
+                <span class="text-sm font-semibold {{ style.header_text }} capitalize">{{ status }}</span>
+            </div>
+            <span class="text-xs font-medium {{ style.header_text }}">{{ apps_by_status.get(status, [])|length }}</span>
+        </div>
+        <div class="p-2 space-y-2">
+            {% for app in apps_by_status.get(status, []) %}
+            {% include "dashboard/_pipeline_card.html" %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

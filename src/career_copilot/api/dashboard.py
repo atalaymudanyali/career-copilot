@@ -63,6 +63,24 @@ async def dashboard_create(
     )
 
 
+@router.get("/dashboard/pipeline")
+async def dashboard_pipeline(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    all_apps = await list_applications(session)
+    statuses = [s.value for s in ApplicationStatus]
+    apps_by_status: dict[str, list] = {s: [] for s in statuses}
+    for app in all_apps:
+        if app.status in apps_by_status:
+            apps_by_status[app.status].append(app)
+    return templates.TemplateResponse(
+        request,
+        "dashboard/pipeline.html",
+        {"statuses": statuses, "apps_by_status": apps_by_status},
+    )
+
+
 @router.get("/dashboard/{application_id}")
 async def dashboard_detail(
     request: Request,
