@@ -4,22 +4,21 @@ AI-powered career tool that tailors CV bullets to job descriptions — grounded 
 
 Paste a job description, get back your existing experience reordered and rephrased to match, with skill gaps identified. The tool **never invents** skills or experience; every output bullet traces back to a specific source in your CV data with a mandatory `source_id`.
 
-## How It Works
+## Features
 
-1. Your CV and project descriptions live in structured local files (`data/`)
-2. You provide a job description (file path, stdin, or API request)
-3. **V1 (RAG):** The job description is embedded and matched against your CV chunks via pgvector cosine similarity — only the most relevant chunks are sent to the LLM
-4. The LLM returns tailored bullets (each with a `source_id`), a "why I fit" summary, and a gaps list
-5. Post-generation validation drops any bullet whose `source_id` doesn't resolve to a real chunk
+- **RAG-powered tailoring** — embeds your job description, retrieves the most relevant CV chunks via pgvector, and generates tailored bullets with source traceability
+- **Application tracker** — CRUD for job applications with status tracking (saved, applied, interviewing, offered, rejected)
+- **Dashboard** — server-rendered UI with Jinja2 + HTMX for managing applications, viewing tailoring results, and filtering by status
+- **Pipeline view** — kanban board that groups applications by status for at-a-glance tracking
+- **PDF export** — generates a tailored CV as a downloadable PDF matching your real CV layout, powered by WeasyPrint
+- **CLI mode** — tailor directly from the terminal without a browser
 
 ## Quick Start
 
 ### Prerequisites
 
-- [Python 3.12+](https://python.org)
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- [Docker](https://docker.com) and Docker Compose
 - [Ollama](https://ollama.com) running locally with models pulled
-- [Docker](https://docker.com) (for V1 API mode)
 
 ### Setup
 
@@ -27,21 +26,39 @@ Paste a job description, get back your existing experience reordered and rephras
 # Clone and install
 git clone https://github.com/atalaymudanyali/career-copilot.git
 cd career-copilot
-uv sync
 
-# Pull the required models
+# Pull the required Ollama models
 ollama pull llama3.1:8b
 ollama pull nomic-embed-text
 
-# Copy and edit the env file
-cp .env.example .env
+# Start the stack (Postgres + pgvector + FastAPI)
+docker compose up --build
 ```
 
-### Option A: CLI Only (V0 mode)
+The app is available at **http://localhost:8000**.
 
-Works without Docker or a database — loads all CV data directly and sends it to Ollama.
+### First Run
+
+1. **Ingest your CV data** — embeds and stores your CV chunks in pgvector:
+   ```bash
+   curl -X POST http://localhost:8000/ingest
+   ```
+
+2. **Open the dashboard** — go to http://localhost:8000/dashboard
+
+3. **Add an application** — click "+ New Application", enter the company, role, and job description
+
+4. **Tailor your CV** — open an application and click "Tailor CV for This Job"
+
+5. **Download the PDF** — after tailoring, click "Download Tailored CV (PDF)" to get a formatted CV
+
+6. **View your pipeline** — go to http://localhost:8000/dashboard/pipeline for a kanban view
+
+### CLI Mode (no Docker needed)
 
 ```bash
+uv sync
+
 # Tailor from a file
 career-copilot tailor --jd path/to/job-description.txt
 
@@ -51,27 +68,7 @@ cat job-description.txt | career-copilot tailor
 # Use a different model
 career-copilot tailor --jd jd.txt --model mistral
 
-# View your source chunks
-career-copilot chunks
-```
-
-### Option B: API Mode (V1 — RAG pipeline)
-
-Uses Docker Compose to run the FastAPI backend with PostgreSQL + pgvector for semantic search.
-
-```bash
-# Start the stack (Postgres + FastAPI app)
-docker-compose up --build
-
-# Ingest your CV data (embeds and stores in pgvector)
-curl -X POST http://localhost:8000/ingest
-
-# Tailor via API
-curl -X POST http://localhost:8000/tailor \
-  -H "Content-Type: application/json" \
-  -d '{"job_description": "Looking for a backend engineer with REST API experience..."}'
-
-# Or use the CLI in API mode
+# Use API mode (requires Docker stack running)
 career-copilot tailor --jd jd.txt --api
 ```
 
@@ -87,6 +84,14 @@ career-copilot tailor --jd jd.txt --api
 | GET | `/health` | Health check (includes Ollama connectivity) |
 | POST | `/ingest` | Embed CV chunks and store in pgvector |
 | POST | `/tailor` | Retrieve relevant chunks and generate tailored bullets |
+| GET | `/dashboard` | Application list with status filters |
+| GET | `/dashboard/pipeline` | Kanban board view |
+| GET | `/dashboard/{id}` | Application detail with inline editing |
+| GET | `/dashboard/{id}/cv.pdf` | Download tailored CV as PDF |
+| POST | `/api/applications` | Create application (JSON API) |
+| GET | `/api/applications` | List applications (JSON API) |
+| PATCH | `/api/applications/{id}` | Update application (JSON API) |
+| DELETE | `/api/applications/{id}` | Delete application (JSON API) |
 | GET | `/docs` | Interactive API documentation (Swagger UI) |
 
 ## Architecture
@@ -101,24 +106,42 @@ career-copilot/
 │   ├── config.py                  # pydantic-settings configuration
 │   ├── db.py                      # Async database session management
 │   ├── main.py                    # FastAPI application
+│   ├── templating.py              # Shared Jinja2 template config
 │   ├── api/
 │   │   ├── health.py              # GET /health
 │   │   ├── ingest.py              # POST /ingest
-│   │   └── tailor.py              # POST /tailor
+│   │   ├── tailor.py              # POST /tailor
+│   │   ├── applications.py        # JSON API for applications
+│   │   └── dashboard.py           # Server-rendered dashboard routes
 │   ├── models/
-│   │   ├── domain.py              # Pydantic data models
-│   │   └── db.py                  # SQLAlchemy models (pgvector)
+│   │   ├── domain.py              # Pydantic models + enums
+│   │   └── db.py                  # SQLAlchemy models (Chunk, Application)
 │   ├── prompts/templates.py       # LLM prompt templates
 │   └── services/
 │       ├── llm.py                 # Ollama client (chat + embed)
 │       ├── data_loader.py         # CV/project file parser
 │       ├── ingestion.py           # Embed + store chunks
 │       ├── retrieval.py           # Semantic search via pgvector
-│       └── tailoring.py           # Tailoring orchestration
+│       ├── tailoring.py           # Tailoring orchestration + validation
+│       ├── applications.py        # Application CRUD operations
+│       └── pdf.py                 # CV template rendering + PDF generation
+├── templates/
+│   ├── base.html                  # Base layout (Tailwind CDN + HTMX)
+│   ├── index.html                 # Landing page
+│   ├── cv/document.html           # CV PDF template (embedded CSS)
+│   └── dashboard/
+│       ├── list.html              # Application table + filter pills
+│       ├── detail.html            # Application detail + inline editing
+│       ├── pipeline.html          # Kanban board view
+│       ├── 404.html               # Not found page
+│       ├── _app_row.html          # Table row partial (HTMX)
+│       ├── _form_create.html      # Create form partial (HTMX)
+│       ├── _pipeline_card.html    # Pipeline card partial
+│       └── _tailoring_result.html # Tailoring result partial (HTMX)
 ├── alembic/                       # Database migrations
-├── Dockerfile                     # Multi-stage build with uv
+├── Dockerfile                     # Multi-stage build with uv + WeasyPrint
 ├── docker-compose.yml             # App + Postgres + pgvector
-└── tests/                         # pytest test suite (26 tests)
+└── tests/                         # pytest test suite (50 tests)
 ```
 
 ## "Never Invent" Enforcement
@@ -134,24 +157,26 @@ This is the core design constraint, enforced at three levels:
 | Component | Choice | Why |
 |-----------|--------|-----|
 | API | FastAPI | Async, auto-docs, Pydantic integration |
+| Frontend | Jinja2 + HTMX + Tailwind CSS | Server-rendered, no build step, dynamic UI without JS framework |
 | CLI | Typer + Rich | Clean CLI with formatted tables and spinners |
 | LLM | Ollama (local) | Free, no API costs, no rate limits, full GPU |
 | Embeddings | nomic-embed-text | 768-dim vectors, runs on Ollama |
 | Vector DB | PostgreSQL + pgvector | Cosine similarity search for RAG |
 | ORM | SQLAlchemy 2.0 (async) | Type-safe async database access |
 | Migrations | Alembic | Versioned schema changes |
+| PDF | WeasyPrint | HTML/CSS to PDF with Cairo + Pango |
 | HTTP | httpx | Async HTTP client for Ollama API |
 | Config | pydantic-settings | Type-safe, env-driven configuration |
 | Container | Docker Compose | One-command deployment |
-| Tests | pytest | 26 tests with mocked external services |
+| Tests | pytest | 50 tests with mocked external services |
 | Lint | Ruff | Fast Python linter and formatter |
 
 ## Roadmap
 
 - [x] **V0** — CLI tailoring tool with structured output and source validation
 - [x] **V1** — RAG with PostgreSQL + pgvector, FastAPI service, Docker Compose
-- [ ] **V2** — Application tracker, skill gap analyzer, Jinja2/HTMX dashboard, Prometheus/Grafana
-- [ ] **V3** — MCP server for conversational use from Claude/Cursor
+- [x] **V2** — Application tracker, dashboard (Jinja2/HTMX), pipeline view, PDF export
+- [ ] **V3** — Tailoring versioning, bullet favorites, MCP server for Claude/Cursor
 
 ## License
 
