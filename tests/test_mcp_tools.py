@@ -224,3 +224,178 @@ async def test_analyze_skill_gaps_ollama_unavailable(mock_llm_cls):
 
     result = await analyze_skill_gaps("Any JD")
     assert "Cannot connect to Ollama" in result
+
+
+# --- Application tracker tool tests ---
+
+
+def _mock_application(
+    id=1,
+    company="TestCorp",
+    role="Backend Developer",
+    status="saved",
+    jd_text="Looking for a dev",
+    url=None,
+    notes=None,
+    tailoring_result=None,
+    applied_at=None,
+):
+    from datetime import datetime
+    from unittest.mock import MagicMock
+
+    app = MagicMock()
+    app.id = id
+    app.company = company
+    app.role = role
+    app.status = status
+    app.jd_text = jd_text
+    app.url = url
+    app.notes = notes
+    app.tailoring_result = tailoring_result
+    app.applied_at = applied_at
+    app.created_at = datetime(2026, 1, 15)
+    app.updated_at = datetime(2026, 1, 15)
+    return app
+
+
+def _mock_db_session():
+    from unittest.mock import MagicMock
+
+    mock_session = AsyncMock()
+    mock_session_factory = MagicMock()
+    ctx = AsyncMock()
+    ctx.__aenter__ = AsyncMock(return_value=mock_session)
+    ctx.__aexit__ = AsyncMock(return_value=False)
+    mock_session_factory.return_value = ctx
+    return mock_session, mock_session_factory
+
+
+@pytest.mark.asyncio
+async def test_list_applications_returns_apps():
+    from career_copilot.mcp_server import list_applications
+
+    _, mock_factory = _mock_db_session()
+    mock_apps = [
+        _mock_application(id=1, company="Google", role="SWE"),
+        _mock_application(id=2, company="Meta", role="Backend"),
+    ]
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.list_applications",
+            return_value=mock_apps,
+        ),
+    ):
+        result = await list_applications()
+        assert "Google" in result
+        assert "Meta" in result
+        assert "#1" in result
+        assert "#2" in result
+
+
+@pytest.mark.asyncio
+async def test_list_applications_empty():
+    from career_copilot.mcp_server import list_applications
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.list_applications",
+            return_value=[],
+        ),
+    ):
+        result = await list_applications()
+        assert "No applications found" in result
+
+
+@pytest.mark.asyncio
+async def test_add_application_creates():
+    from career_copilot.mcp_server import add_application
+
+    _, mock_factory = _mock_db_session()
+    mock_app = _mock_application(id=5, company="Stripe", role="Backend Engineer")
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.create_application",
+            return_value=mock_app,
+        ),
+    ):
+        result = await add_application("Stripe", "Backend Engineer", "Build APIs")
+        assert "#5" in result
+        assert "Stripe" in result
+
+
+@pytest.mark.asyncio
+async def test_get_application_found():
+    from career_copilot.mcp_server import get_application
+
+    _, mock_factory = _mock_db_session()
+    mock_app = _mock_application(
+        id=3, company="Google", role="SWE", jd_text="Build distributed systems"
+    )
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.get_application",
+            return_value=mock_app,
+        ),
+    ):
+        result = await get_application(3)
+        assert "Google" in result
+        assert "SWE" in result
+        assert "Build distributed systems" in result
+
+
+@pytest.mark.asyncio
+async def test_get_application_not_found():
+    from career_copilot.mcp_server import get_application
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.get_application",
+            return_value=None,
+        ),
+    ):
+        result = await get_application(999)
+        assert "not found" in result
+
+
+@pytest.mark.asyncio
+async def test_update_application_status_valid():
+    from career_copilot.mcp_server import update_application_status
+
+    _, mock_factory = _mock_db_session()
+    mock_app = _mock_application(id=1, company="Google", role="SWE", status="applied")
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.applications.get_application",
+            return_value=mock_app,
+        ),
+        patch(
+            "career_copilot.services.applications.update_application",
+            return_value=mock_app,
+        ),
+    ):
+        result = await update_application_status(1, "applied")
+        assert "applied" in result
+        assert "Google" in result
+
+
+@pytest.mark.asyncio
+async def test_update_application_status_invalid():
+    from career_copilot.mcp_server import update_application_status
+
+    result = await update_application_status(1, "invalid_status")
+    assert "Invalid status" in result
+    assert "saved" in result

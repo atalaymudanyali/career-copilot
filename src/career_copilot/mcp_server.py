@@ -14,6 +14,7 @@ from career_copilot.services.tailoring import tailor
 mcp = MCPServer("Career Copilot")
 
 OLLAMA_UNAVAILABLE = "Cannot connect to Ollama. Make sure it is running with: ollama serve"
+DB_UNAVAILABLE = "Cannot connect to the database. Start Docker with: docker compose up -d"
 
 
 @mcp.tool()
@@ -159,6 +160,140 @@ async def analyze_skill_gaps(job_description: str) -> str:
         return response
     except httpx.ConnectError:
         return OLLAMA_UNAVAILABLE
+
+
+def _get_db_session():
+    from career_copilot.db import async_session
+
+    return async_session
+
+
+@mcp.tool()
+async def list_applications(status: str | None = None) -> str:
+    """List tracked job applications, optionally filtered by status."""
+    try:
+        from career_copilot.services.applications import (
+            list_applications as list_apps,
+        )
+
+        async with _get_db_session()() as session:
+            apps = await list_apps(session, status=status)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    if not apps:
+        if not status:
+            return "No applications found."
+        return f"No applications with status '{status}'."
+
+    lines = ["## Applications", ""]
+    for app in apps:
+        lines.append(f"- **#{app.id}** {app.company} — {app.role} [{app.status}]")
+        if app.applied_at:
+            lines.append(f"  Applied: {app.applied_at.strftime('%Y-%m-%d')}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def add_application(
+    company: str,
+    role: str,
+    job_description: str,
+    url: str | None = None,
+    notes: str | None = None,
+) -> str:
+    """Save a new job application to the tracker."""
+    try:
+        from career_copilot.models.domain import ApplicationCreate
+        from career_copilot.services.applications import create_application
+
+        data = ApplicationCreate(
+            company=company,
+            role=role,
+            jd_text=job_description,
+            url=url,
+            notes=notes,
+        )
+        async with _get_db_session()() as session:
+            app = await create_application(session, data)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    return f"Application #{app.id} created: {app.company} — {app.role} [saved]"
+
+
+@mcp.tool()
+async def get_application(application_id: int) -> str:
+    """Get full details of a tracked application by its ID."""
+    try:
+        from career_copilot.services.applications import (
+            get_application as get_app,
+        )
+
+        async with _get_db_session()() as session:
+            app = await get_app(session, application_id)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    if not app:
+        return f"Application #{application_id} not found."
+
+    lines = [
+        f"## Application #{app.id}",
+        "",
+        f"**Company:** {app.company}",
+        f"**Role:** {app.role}",
+        f"**Status:** {app.status}",
+        f"**Created:** {app.created_at.strftime('%Y-%m-%d')}",
+    ]
+    if app.url:
+        lines.append(f"**URL:** {app.url}")
+    if app.notes:
+        lines.append(f"**Notes:** {app.notes}")
+    if app.applied_at:
+        lines.append(f"**Applied:** {app.applied_at.strftime('%Y-%m-%d')}")
+    lines.extend(["", "### Job Description", "", app.jd_text])
+    if app.tailoring_result:
+        lines.extend(["", "### Tailoring Result", "", json.dumps(app.tailoring_result, indent=2)])
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def update_application_status(application_id: int, status: str) -> str:
+    """Update the status of a tracked application (saved/applied/interviewing/offered/rejected)."""
+    from career_copilot.models.domain import ApplicationStatus
+
+    valid_statuses = [s.value for s in ApplicationStatus]
+    if status not in valid_statuses:
+        return f"Invalid status '{status}'. Must be one of: {', '.join(valid_statuses)}"
+
+    try:
+        from career_copilot.models.domain import ApplicationUpdate
+        from career_copilot.services.applications import (
+            get_application as get_app,
+        )
+        from career_copilot.services.applications import (
+            update_application,
+        )
+
+        async with _get_db_session()() as session:
+            app = await get_app(session, application_id)
+            if not app:
+                return f"Application #{application_id} not found."
+            data = ApplicationUpdate(status=ApplicationStatus(status))
+            app = await update_application(session, app, data)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    return f"Application #{app.id} ({app.company} — {app.role}) updated to [{app.status}]"
 
 
 def main():
