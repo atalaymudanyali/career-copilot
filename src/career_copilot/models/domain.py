@@ -107,6 +107,14 @@ class ApplicationUpdate(BaseModel):
     notes: str | None = None
 
 
+class TailoringVersionResponse(BaseModel):
+    id: int
+    application_id: int
+    version_number: int
+    tailoring_result: TailoringResult
+    created_at: datetime
+
+
 class ApplicationResponse(BaseModel):
     id: int
     company: str
