@@ -431,3 +431,203 @@ async def test_generate_cv_pdf_ollama_unavailable(mock_tailor):
 
     result = await generate_cv_pdf("Any JD", "Google", "SWE")
     assert "Cannot connect to Ollama" in result
+
+
+# --- Tailoring version tools ---
+
+
+def _mock_version(id=1, application_id=1, version_number=1, tailoring_result=None):
+    from datetime import datetime
+    from unittest.mock import MagicMock
+
+    v = MagicMock()
+    v.id = id
+    v.application_id = application_id
+    v.version_number = version_number
+    v.tailoring_result = tailoring_result or {
+        "tailored_bullets": [{"text": "Built APIs", "source_id": "exp1:b1", "relevance": "high"}],
+        "why_i_fit": "Strong backend skills",
+        "gaps": ["Kubernetes"],
+    }
+    v.created_at = datetime(2026, 8, 26, 12, 0)
+    return v
+
+
+@pytest.mark.asyncio
+async def test_list_tailoring_versions():
+    from career_copilot.mcp_server import list_tailoring_versions
+
+    _, mock_factory = _mock_db_session()
+    versions = [
+        _mock_version(id=1, version_number=1),
+        _mock_version(id=2, version_number=2),
+    ]
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.tailoring_versions.list_versions",
+            return_value=versions,
+        ),
+    ):
+        result = await list_tailoring_versions(1)
+        assert "v1" in result
+        assert "v2" in result
+        assert "1 bullets" in result
+
+
+@pytest.mark.asyncio
+async def test_list_tailoring_versions_empty():
+    from career_copilot.mcp_server import list_tailoring_versions
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.tailoring_versions.list_versions",
+            return_value=[],
+        ),
+    ):
+        result = await list_tailoring_versions(99)
+        assert "No tailoring versions" in result
+
+
+@pytest.mark.asyncio
+async def test_get_tailoring_version():
+    from career_copilot.mcp_server import get_tailoring_version
+
+    _, mock_factory = _mock_db_session()
+    versions = [_mock_version(id=1, version_number=1)]
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.tailoring_versions.list_versions",
+            return_value=versions,
+        ),
+    ):
+        result = await get_tailoring_version(1, 1)
+        assert "Version 1" in result
+        assert "Built APIs" in result
+        assert "Strong backend skills" in result
+        assert "Kubernetes" in result
+
+
+@pytest.mark.asyncio
+async def test_get_tailoring_version_not_found():
+    from career_copilot.mcp_server import get_tailoring_version
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.tailoring_versions.list_versions",
+            return_value=[],
+        ),
+    ):
+        result = await get_tailoring_version(1, 5)
+        assert "not found" in result
+
+
+# --- Favorite bullet tools ---
+
+
+def _mock_favorite(bullet_text="Built APIs", source_id="exp1:b1", relevance="high", app_id=1):
+    from unittest.mock import MagicMock
+
+    fav = MagicMock()
+    fav.bullet_text = bullet_text
+    fav.source_id = source_id
+    fav.relevance = relevance
+    fav.application_id = app_id
+    return fav
+
+
+@pytest.mark.asyncio
+async def test_list_favorite_bullets():
+    from career_copilot.mcp_server import list_favorite_bullets
+
+    _, mock_factory = _mock_db_session()
+    favs = [_mock_favorite(), _mock_favorite(bullet_text="Deployed Docker", source_id="exp2:b1")]
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.favorites.list_all_favorites",
+            return_value=favs,
+        ),
+    ):
+        result = await list_favorite_bullets()
+        assert "Built APIs" in result
+        assert "Deployed Docker" in result
+
+
+@pytest.mark.asyncio
+async def test_list_favorite_bullets_by_app():
+    from career_copilot.mcp_server import list_favorite_bullets
+
+    _, mock_factory = _mock_db_session()
+    favs = [_mock_favorite()]
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.favorites.list_favorites",
+            return_value=favs,
+        ),
+    ):
+        result = await list_favorite_bullets(application_id=1)
+        assert "Built APIs" in result
+
+
+@pytest.mark.asyncio
+async def test_list_favorite_bullets_empty():
+    from career_copilot.mcp_server import list_favorite_bullets
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.favorites.list_all_favorites",
+            return_value=[],
+        ),
+    ):
+        result = await list_favorite_bullets()
+        assert "No favorite bullets" in result
+
+
+@pytest.mark.asyncio
+async def test_toggle_favorite_bullet_star():
+    from career_copilot.mcp_server import toggle_favorite_bullet
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.favorites.toggle_favorite",
+            return_value=True,
+        ),
+    ):
+        result = await toggle_favorite_bullet(1, "Built APIs", "exp1:b1")
+        assert "starred" in result
+
+
+@pytest.mark.asyncio
+async def test_toggle_favorite_bullet_unstar():
+    from career_copilot.mcp_server import toggle_favorite_bullet
+
+    _, mock_factory = _mock_db_session()
+
+    with (
+        patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
+        patch(
+            "career_copilot.services.favorites.toggle_favorite",
+            return_value=False,
+        ),
+    ):
+        result = await toggle_favorite_bullet(1, "Built APIs", "exp1:b1")
+        assert "unstarred" in result

@@ -329,5 +329,124 @@ async def generate_cv_pdf(job_description: str, company: str, role: str) -> str:
     return f"PDF generated: {filepath}"
 
 
+@mcp.tool()
+async def list_tailoring_versions(application_id: int) -> str:
+    """List all tailoring versions for an application, showing version number and date."""
+    try:
+        from career_copilot.services.tailoring_versions import (
+            list_versions,
+        )
+
+        async with _get_db_session()() as session:
+            versions = await list_versions(session, application_id)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    if not versions:
+        return f"No tailoring versions found for application #{application_id}."
+
+    lines = [f"## Tailoring Versions for Application #{application_id}", ""]
+    for v in versions:
+        date_str = v.created_at.strftime("%Y-%m-%d %H:%M") if v.created_at else "N/A"
+        bullet_count = len(v.tailoring_result.get("tailored_bullets", []))
+        lines.append(f"- **v{v.version_number}** (id={v.id}) — {date_str} — {bullet_count} bullets")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def get_tailoring_version(application_id: int, version_number: int) -> str:
+    """Get the full tailoring result for a specific version of an application."""
+    try:
+        from career_copilot.services.tailoring_versions import (
+            list_versions,
+        )
+
+        async with _get_db_session()() as session:
+            versions = await list_versions(session, application_id)
+            version = next((v for v in versions if v.version_number == version_number), None)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    if not version:
+        return f"Version {version_number} not found for application #{application_id}."
+
+    result = version.tailoring_result
+    lines = [f"## Version {version.version_number} — Application #{application_id}", ""]
+
+    lines.append("### Tailored Bullets")
+    for i, bullet in enumerate(result.get("tailored_bullets", []), 1):
+        lines.append(f"{i}. [{bullet.get('relevance', 'medium').upper()}] {bullet['text']}")
+        lines.append(f"   Source: {bullet['source_id']}")
+    lines.append("")
+
+    if result.get("why_i_fit"):
+        lines.extend(["### Why I Fit", "", result["why_i_fit"], ""])
+
+    if result.get("gaps"):
+        lines.append("### Gaps")
+        for gap in result["gaps"]:
+            lines.append(f"- {gap}")
+
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def list_favorite_bullets(application_id: int | None = None) -> str:
+    """List favorited bullets, optionally filtered by application ID."""
+    try:
+        from career_copilot.services.favorites import (
+            list_all_favorites,
+            list_favorites,
+        )
+
+        async with _get_db_session()() as session:
+            if application_id:
+                favorites = await list_favorites(session, application_id)
+            else:
+                favorites = await list_all_favorites(session)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    if not favorites:
+        scope = f" for application #{application_id}" if application_id else ""
+        return f"No favorite bullets found{scope}."
+
+    lines = ["## Favorite Bullets", ""]
+    for fav in favorites:
+        lines.append(f"- [{fav.relevance.upper()}] {fav.bullet_text}")
+        lines.append(f"  Source: {fav.source_id} | App: #{fav.application_id}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+async def toggle_favorite_bullet(
+    application_id: int,
+    bullet_text: str,
+    source_id: str,
+    relevance: str = "medium",
+) -> str:
+    """Star or unstar a bullet for an application. Returns the new state."""
+    try:
+        from career_copilot.services.favorites import toggle_favorite
+
+        async with _get_db_session()() as session:
+            is_now_favorited = await toggle_favorite(
+                session, application_id, bullet_text, source_id, relevance
+            )
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    action = "starred" if is_now_favorited else "unstarred"
+    return f"Bullet {action} for application #{application_id}: {bullet_text[:80]}"
+
+
 def main():
     mcp.run()

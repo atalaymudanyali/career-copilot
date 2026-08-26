@@ -6,12 +6,14 @@ Paste a job description, get back your existing experience reordered and rephras
 
 ## Features
 
-- **MCP server** — 10 tools accessible from Claude Desktop, Claude Code, or Cursor for conversational CV tailoring, gap analysis, application tracking, and PDF generation
+- **MCP server** — 14 tools accessible from Claude Desktop, Claude Code, or Cursor for conversational CV tailoring, gap analysis, application tracking, versioning, favorites, and PDF generation
 - **RAG-powered tailoring** — embeds your job description, retrieves the most relevant CV chunks via pgvector, and generates tailored bullets with source traceability
+- **Tailoring versioning** — every tailor run creates a versioned snapshot; browse and compare past versions without losing history
+- **Bullet favorites** — star individual bullets from any version; favorited bullets get priority in PDF generation
 - **Application tracker** — CRUD for job applications with status tracking (saved, applied, interviewing, offered, rejected)
-- **Dashboard** — server-rendered UI with Jinja2 + HTMX for managing applications, viewing tailoring results, and filtering by status
+- **Dashboard** — dark-theme server-rendered UI with Jinja2 + HTMX for managing applications, viewing tailoring results, and filtering by status
 - **Pipeline view** — kanban board that groups applications by status for at-a-glance tracking
-- **PDF export** — generates a tailored CV as a downloadable PDF matching your real CV layout, powered by WeasyPrint
+- **PDF export** — generates a tailored CV as a downloadable PDF; favorited bullets go first, remaining slots filled by relevance
 - **CLI mode** — tailor directly from the terminal without a browser
 
 ## Quick Start
@@ -112,12 +114,17 @@ On macOS, it's at `~/Library/Application Support/Claude/claude_desktop_config.js
 | `add_application` | Docker | Save a new application |
 | `get_application` | Docker | Full application details |
 | `update_application_status` | Docker | Change application status |
+| `list_tailoring_versions` | Docker | List version history for an application |
+| `get_tailoring_version` | Docker | Get a specific version's full result |
+| `list_favorite_bullets` | Docker | List starred bullets (all or per-app) |
+| `toggle_favorite_bullet` | Docker | Star or unstar a bullet |
 
 **Example prompts:**
 - "Tailor my CV for this role: [paste JD]"
 - "What skills am I missing for this job? [paste JD]"
 - "Generate a PDF for the Backend Developer role at Google: [paste JD]"
 - "Save this job posting" / "Show my applications" / "Update #1 to interviewing"
+- "Show my tailoring versions for application #3" / "Star this bullet for app #1"
 
 ### Edit Your CV Data
 
@@ -150,7 +157,7 @@ career-copilot/
 │   └── projects/*.md              # Project descriptions (YAML frontmatter)
 ├── src/career_copilot/
 │   ├── cli.py                     # Typer CLI (local + API mode)
-│   ├── mcp_server.py              # MCP server (10 tools for Claude/Cursor)
+│   ├── mcp_server.py              # MCP server (14 tools for Claude/Cursor)
 │   ├── config.py                  # pydantic-settings configuration
 │   ├── db.py                      # Async database session management
 │   ├── main.py                    # FastAPI application
@@ -163,7 +170,7 @@ career-copilot/
 │   │   └── dashboard.py           # Server-rendered dashboard routes
 │   ├── models/
 │   │   ├── domain.py              # Pydantic models + enums
-│   │   └── db.py                  # SQLAlchemy models (Chunk, Application)
+│   │   └── db.py                  # SQLAlchemy models (Chunk, Application, TailoringVersion, FavoriteBullet)
 │   ├── prompts/templates.py       # LLM prompt templates
 │   └── services/
 │       ├── llm.py                 # Ollama client (chat + embed)
@@ -172,7 +179,9 @@ career-copilot/
 │       ├── retrieval.py           # Semantic search via pgvector
 │       ├── tailoring.py           # Tailoring orchestration + validation
 │       ├── applications.py        # Application CRUD operations
-│       └── pdf.py                 # CV template rendering + PDF generation
+│       ├── tailoring_versions.py  # Tailoring version CRUD
+│       ├── favorites.py           # Bullet favorites service
+│       └── pdf.py                 # CV template rendering + PDF generation (favorites-aware)
 ├── templates/
 │   ├── base.html                  # Base layout (Tailwind CDN + HTMX)
 │   ├── index.html                 # Landing page
@@ -185,7 +194,10 @@ career-copilot/
 │       ├── _app_row.html          # Table row partial (HTMX)
 │       ├── _form_create.html      # Create form partial (HTMX)
 │       ├── _pipeline_card.html    # Pipeline card partial
-│       └── _tailoring_result.html # Tailoring result partial (HTMX)
+│       ├── _tailoring_result.html # Tailoring result partial (HTMX)
+│       ├── _bullet_star.html      # Star/unstar toggle button
+│       ├── _notes_section.html    # Bullet-style notes with linkify
+│       └── _tailor_button.html    # Empty state tailor button
 ├── alembic/                       # Database migrations
 ├── claude-desktop-config.example.json  # Example MCP config for Claude Desktop
 ├── Dockerfile                     # Multi-stage build with uv + WeasyPrint
@@ -218,7 +230,7 @@ This is the core design constraint, enforced at three levels:
 | HTTP | httpx | Async HTTP client for Ollama API |
 | Config | pydantic-settings | Type-safe, env-driven configuration |
 | Container | Docker Compose | One-command deployment |
-| Tests | pytest | 77 tests with mocked external services |
+| Tests | pytest | 101 tests with mocked external services |
 | Lint | Ruff | Fast Python linter and formatter |
 
 ## Roadmap
@@ -227,7 +239,7 @@ This is the core design constraint, enforced at three levels:
 - [x] **V1** — RAG with PostgreSQL + pgvector, FastAPI service, Docker Compose
 - [x] **V2** — Application tracker, dashboard (Jinja2/HTMX), pipeline view, PDF export
 - [x] **V3** — MCP server (10 tools for Claude/Cursor), page-fill fix, skill gap analysis
-- [ ] **V4** — Tailoring versioning, bullet favorites, custom CV composition
+- [x] **V4** — Dark theme redesign, tailoring versioning, bullet favorites with PDF priority, 14 MCP tools
 
 ## License
 

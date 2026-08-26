@@ -1,6 +1,6 @@
 [project]
 name = "career-copilot"
-version = "0.5.0"
+version = "0.6.0"
 description = "AI-powered career copilot that tailors CV bullets to job descriptions using only real experience"
 readme = "README.md"
 authors = [
