@@ -52,6 +52,7 @@ class CV(BaseModel):
     experience: list[Experience] = []
     projects: list[str] = []
     languages_spoken: list[SpokenLanguage] = []
+    interests: list[str] = []
 
 
 class Project(BaseModel):

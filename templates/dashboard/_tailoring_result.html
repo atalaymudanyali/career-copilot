@@ -9,6 +9,15 @@
                 </svg>
                 Download PDF
             </a>
+            <button hx-get="/dashboard/{{ app.id }}/compose{% if version %}?version_id={{ version.id }}{% endif %}"
+                    hx-target="#tailoring-section"
+                    hx-swap="innerHTML"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-overlay text-slate-300 hover:text-white ring-1 ring-slate-600 hover:ring-slate-500 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Compose CV
+            </button>
             {% if versions %}
             <div class="flex items-center gap-1">
                 <button hx-get="/dashboard/{{ app.id }}/starred"
@@ -99,9 +108,25 @@
                 {% for bullet in result["tailored_bullets"] %}
                 <tr class="border-b border-slate-700/30">
                     <td class="px-2 py-3 text-center">
+                        {% if is_starred_view %}
+                        <form hx-post="/dashboard/favorites/toggle"
+                              hx-target="#tailoring-section"
+                              hx-swap="innerHTML"
+                              class="inline">
+                            <input type="hidden" name="application_id" value="{{ app.id }}">
+                            <input type="hidden" name="bullet_text" value="{{ bullet['text'] }}">
+                            <input type="hidden" name="source_id" value="{{ bullet['source_id'] }}">
+                            <input type="hidden" name="relevance" value="{{ bullet.get('relevance', 'medium') }}">
+                            <input type="hidden" name="view" value="starred">
+                            <button type="submit"
+                                    class="w-7 h-7 rounded-md flex items-center justify-center text-base transition bg-amber-400/20 text-amber-400 hover:bg-amber-400/30"
+                                    title="Remove from favorites">&#9733;</button>
+                        </form>
+                        {% else %}
                         {% set is_favorited = bullet["text"] in (favorited_texts or []) %}
                         {% set app_id = app.id %}
                         {% include "dashboard/_bullet_star.html" %}
+                        {% endif %}
                     </td>
                     <td class="px-4 py-3 text-sm text-slate-300">{{ bullet["text"] }}</td>
                     <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ bullet["source_id"] }}</td>

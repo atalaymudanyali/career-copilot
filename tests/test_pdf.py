@@ -51,10 +51,7 @@ def test_cv_pdf_route_registered():
 
 @pytest.mark.asyncio
 @patch("career_copilot.api.dashboard.generate_cv_pdf", return_value=b"%PDF-mock-content")
-@patch(
-    "career_copilot.api.dashboard.get_favorited_texts",
-    return_value=["Built REST APIs with .NET Core"],
-)
+@patch("career_copilot.api.dashboard.list_favorites")
 @patch("career_copilot.api.dashboard.get_application")
 async def test_download_cv_pdf_returns_pdf(mock_get, mock_favs, mock_pdf):
     from fastapi.testclient import TestClient
@@ -64,18 +61,21 @@ async def test_download_cv_pdf_returns_pdf(mock_get, mock_favs, mock_pdf):
     application = _make_application()
     mock_get.return_value = application
 
+    mock_fav = MagicMock()
+    mock_fav.bullet_text = "Built REST APIs with .NET Core"
+    mock_fav.source_id = "internship-mobven:bullet:2"
+    mock_fav.relevance = "high"
+    mock_favs.return_value = [mock_fav]
+
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/dashboard/1/cv.pdf")
 
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert b"%PDF-mock-content" in resp.content
-    mock_pdf.assert_called_once_with(
-        application.tailoring_result,
-        application.company,
-        application.role,
-        favorite_texts={"Built REST APIs with .NET Core"},
-    )
+    mock_pdf.assert_called_once()
+    call_kwargs = mock_pdf.call_args
+    assert call_kwargs.kwargs.get("favorite_texts") == {"Built REST APIs with .NET Core"}
 
 
 @pytest.mark.asyncio
@@ -103,6 +103,91 @@ async def test_download_cv_pdf_not_tailored(mock_get):
 
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/dashboard/1/cv.pdf")
+
+    assert resp.status_code == 404
+
+
+def test_compose_route_registered():
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.get("/dashboard/1/compose")
+    assert resp.status_code != 404
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.api.dashboard.list_favorites", return_value=[])
+@patch("career_copilot.api.dashboard.get_application")
+async def test_compose_returns_editable_view(mock_get, mock_favs):
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+
+    application = _make_application()
+    mock_get.return_value = application
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.get("/dashboard/1/compose")
+
+    assert resp.status_code == 200
+    assert b"Compose CV" in resp.content
+    assert b"why_i_fit" in resp.content
+    assert b"bullet_text" in resp.content
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.api.dashboard.get_application", return_value=None)
+async def test_compose_not_found(mock_get):
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.get("/dashboard/999/compose")
+
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.api.dashboard.generate_cv_pdf", return_value=b"%PDF-composed")
+@patch("career_copilot.api.dashboard.get_application")
+async def test_compose_pdf_generates_pdf(mock_get, mock_pdf):
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+
+    application = _make_application()
+    mock_get.return_value = application
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.post(
+        "/dashboard/1/compose/pdf",
+        data={
+            "why_i_fit": "Edited fit paragraph",
+            "bullet_text": ["Edited bullet one", "Edited bullet two"],
+            "source_id": ["exp-1", "custom"],
+        },
+    )
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/pdf"
+    assert b"%PDF-composed" in resp.content
+    mock_pdf.assert_called_once()
+    call_kwargs = mock_pdf.call_args
+    assert call_kwargs.kwargs.get("composed") is True
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.api.dashboard.get_application", return_value=None)
+async def test_compose_pdf_not_found(mock_get):
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.post("/dashboard/999/compose/pdf", data={"why_i_fit": "test"})
 
     assert resp.status_code == 404
 

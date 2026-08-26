@@ -116,12 +116,13 @@
 
         .bullet-list li {
             margin-bottom: 1pt;
-            text-indent: -12pt;
-            padding-left: 0pt;
         }
 
         .bullet-list li::before {
-            content: "\2022\00a0\00a0";
+            content: "\2022";
+            display: inline-block;
+            width: 10pt;
+            margin-left: -10pt;
             color: black;
         }
 
@@ -260,13 +261,29 @@
 {% endif %}
 
 <!-- Projects -->
-{% if project_bullets %}
+{% if permanent_projects or project_bullets %}
 <div class="section-title">Projects</div>
+{% for proj in permanent_projects %}
+<div class="entry">
+    <div class="exp-line1">
+        <span class="exp-role">{{ proj.title }}</span>
+        <span class="exp-pipe">|</span>
+        <span class="exp-company">{{ proj.tech }}</span>
+    </div>
+    <ul class="bullet-list">
+        {% for b in proj.bullets %}
+        <li>{{ b }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+{% if project_bullets %}
 <ul class="bullet-list">
     {% for bullet_text in project_bullets %}
     <li>{{ bullet_text }}</li>
     {% endfor %}
 </ul>
+{% endif %}
 {% endif %}
 
 <!-- Education -->
@@ -314,14 +331,22 @@
 {% endif %}
 
 <!-- Languages & Interests -->
-{% if cv.languages_spoken %}
+{% if cv.languages_spoken or cv.interests %}
 <div class="section-title">Languages & Interests</div>
+{% if cv.languages_spoken %}
 <div class="lang-row">
     <span class="lang-label">Languages:</span>
     {% for lang in cv.languages_spoken %}
     {{ lang.language }} ({{ lang.level }}){% if not loop.last %},{% endif %}
     {% endfor %}
 </div>
+{% endif %}
+{% if cv.interests %}
+<div class="lang-row">
+    <span class="lang-label">Interests:</span>
+    {{ cv.interests | join(", ") }}
+</div>
+{% endif %}
 {% endif %}
 
 </body>

@@ -1,0 +1,114 @@
+<div class="space-y-4">
+    <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-3">
+            <h2 class="text-sm font-medium text-amber-400/70">Compose CV</h2>
+            <span class="text-xs text-slate-500">Edit bullets and generate PDF</span>
+        </div>
+        <button hx-get="/dashboard/{{ app.id }}/starred"
+                hx-target="#tailoring-section"
+                hx-swap="innerHTML"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-white bg-surface-overlay/50 hover:bg-surface-overlay transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back
+        </button>
+    </div>
+
+    <form method="POST" action="/dashboard/{{ app.id }}/compose/pdf" target="_blank" id="compose-form"
+          onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA')event.preventDefault()">
+
+        <div class="mb-4">
+            <h3 class="text-sm font-medium text-slate-400 mb-2">Why I'm a Good Fit</h3>
+            <textarea name="why_i_fit" rows="4"
+                      class="w-full px-3 py-2 bg-surface border border-slate-700/50 rounded-lg text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-y">{{ why_i_fit }}</textarea>
+        </div>
+
+        <div class="mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium text-slate-400">CV Bullets</h3>
+                <span class="text-[10px] text-slate-500" id="compose-bullet-count">{{ compose_bullets|length }} bullets</span>
+            </div>
+            <div id="compose-bullets" class="space-y-2">
+                {% for bullet in compose_bullets %}
+                <div class="compose-bullet flex items-start gap-2 group">
+                    <input type="hidden" name="source_id" value="{{ bullet.source_id }}">
+                    <span class="text-[10px] text-slate-500 font-mono mt-2.5 w-20 shrink-0 truncate" title="{{ bullet.source_id }}">{{ bullet.source_id }}</span>
+                    <input type="text" name="bullet_text" value="{{ bullet.text }}"
+                           class="flex-1 px-3 py-2 bg-surface border border-slate-700/50 rounded-lg text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                    <button type="button" onclick="this.closest('.compose-bullet').remove();updateBulletCount()"
+                            class="text-slate-600 hover:text-red-400 text-lg leading-none px-1 mt-2 transition shrink-0 opacity-0 group-hover:opacity-100" title="Remove">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex gap-2 mb-6">
+            <input type="text" id="new-bullet-text" placeholder="Add a custom bullet..."
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addComposeBullet()}"
+                   class="flex-1 px-3 py-2 bg-surface border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <button type="button" onclick="addComposeBullet()"
+                    class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-500 transition">
+                Add
+            </button>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Generate PDF
+        </button>
+    </form>
+</div>
+
+<script>
+function updateBulletCount() {
+    var count = document.querySelectorAll('#compose-bullets .compose-bullet').length;
+    document.getElementById('compose-bullet-count').textContent = count + ' bullet' + (count !== 1 ? 's' : '');
+}
+
+function addComposeBullet() {
+    var input = document.getElementById('new-bullet-text');
+    var text = input.value.trim();
+    if (!text) return;
+
+    var container = document.getElementById('compose-bullets');
+    var div = document.createElement('div');
+    div.className = 'compose-bullet flex items-start gap-2 group';
+
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = 'source_id';
+    hidden.value = 'custom';
+
+    var label = document.createElement('span');
+    label.className = 'text-[10px] text-slate-500 font-mono mt-2.5 w-20 shrink-0 truncate';
+    label.title = 'custom';
+    label.textContent = 'custom';
+
+    var textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.name = 'bullet_text';
+    textInput.value = text;
+    textInput.className = 'flex-1 px-3 py-2 bg-surface border border-slate-700/50 rounded-lg text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent';
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'text-slate-600 hover:text-red-400 text-lg leading-none px-1 mt-2 transition shrink-0 opacity-0 group-hover:opacity-100';
+    removeBtn.title = 'Remove';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.onclick = function() { div.remove(); updateBulletCount(); };
+
+    div.appendChild(hidden);
+    div.appendChild(label);
+    div.appendChild(textInput);
+    div.appendChild(removeBtn);
+    container.appendChild(div);
+
+    input.value = '';
+    input.focus();
+    updateBulletCount();
+}
+</script>
