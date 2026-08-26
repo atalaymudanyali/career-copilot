@@ -59,6 +59,7 @@
 
     <div class="mb-6" id="tailoring-section">
     {% if app.tailoring_result %}
+        {% set version = versions[0] if versions else none %}
         {% include "dashboard/_tailoring_result.html" %}
     {% else %}
         <button hx-post="/dashboard/{{ app.id }}/tailor"

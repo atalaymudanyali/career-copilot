@@ -1,0 +1,24 @@
+<div class="border-t border-slate-700/50 pt-4 mt-2">
+    <h3 class="text-sm font-medium text-slate-400 mb-3">Version History</h3>
+    <div class="space-y-1">
+        {% for v in versions %}
+        <button hx-get="/dashboard/{{ app.id }}/versions/{{ v.id }}"
+                hx-target="#tailoring-section"
+                hx-swap="innerHTML"
+                class="w-full text-left px-3 py-2 rounded-lg text-sm transition
+                       {% if version and v.id == version.id %}
+                       bg-brand-500/10 border border-brand-500/20 text-brand-300
+                       {% else %}
+                       text-slate-400 hover:bg-surface-overlay/50 hover:text-slate-300
+                       {% endif %}">
+            <span class="font-mono text-xs">v{{ v.version_number }}</span>
+            {% if v.created_at %}
+            <span class="ml-2 text-xs text-slate-500">{{ v.created_at.strftime('%b %d, %Y at %H:%M') }}</span>
+            {% endif %}
+            {% if loop.first %}
+            <span class="ml-2 text-xs text-brand-400">(latest)</span>
+            {% endif %}
+        </button>
+        {% endfor %}
+    </div>
+</div>

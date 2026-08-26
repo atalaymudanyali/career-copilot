@@ -15,7 +15,11 @@ from career_copilot.services.applications import (
 from career_copilot.services.pdf import generate_cv_pdf
 from career_copilot.services.retrieval import retrieve
 from career_copilot.services.tailoring import get_source_chunks, tailor_rag
-from career_copilot.services.tailoring_versions import create_version
+from career_copilot.services.tailoring_versions import (
+    create_version,
+    get_version,
+    list_versions,
+)
 from career_copilot.templating import templates
 
 router = APIRouter(tags=["dashboard"])
@@ -92,8 +96,11 @@ async def dashboard_detail(
     if not application:
         return templates.TemplateResponse(request, "dashboard/404.html", status_code=404)
     statuses = [s.value for s in ApplicationStatus]
+    versions = await list_versions(session, application_id)
     return templates.TemplateResponse(
-        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+        request,
+        "dashboard/detail.html",
+        {"app": application, "statuses": statuses, "versions": versions},
     )
 
 
@@ -118,8 +125,10 @@ async def dashboard_update(
     application = await update_application(session, application, data)
 
     statuses = [s.value for s in ApplicationStatus]
+    versions = await list_versions(session, application_id)
+    ctx = {"app": application, "statuses": statuses, "versions": versions}
     return templates.TemplateResponse(
-        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+        request, "dashboard/detail.html", ctx
     )
 
 
@@ -140,17 +149,50 @@ async def dashboard_tailor(
     result = await tailor_rag(application.jd_text, chunks, filler_chunks=filler_chunks)
     result_dict = result.model_dump()
     await store_tailoring_result(session, application, result_dict)
-    await create_version(session, application.id, result_dict)
+    version = await create_version(session, application.id, result_dict)
 
     is_htmx = request.headers.get("HX-Request") == "true"
     if is_htmx:
+        versions = await list_versions(session, application.id)
         return templates.TemplateResponse(
-            request, "dashboard/_tailoring_result.html", {"app": application}
+            request,
+            "dashboard/_tailoring_result.html",
+            {"app": application, "version": version, "versions": versions},
         )
 
     statuses = [s.value for s in ApplicationStatus]
+    versions = await list_versions(session, application.id)
     return templates.TemplateResponse(
-        request, "dashboard/detail.html", {"app": application, "statuses": statuses}
+        request,
+        "dashboard/detail.html",
+        {"app": application, "statuses": statuses, "versions": versions},
+    )
+
+
+@router.get("/dashboard/{application_id}/versions/{version_id}")
+async def dashboard_version_detail(
+    request: Request,
+    application_id: int,
+    version_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    version = await get_version(session, version_id)
+    if not version or version.application_id != application_id:
+        return HTMLResponse("Version not found", status_code=404)
+
+    versions = await list_versions(session, application_id)
+
+    app_with_version = application
+    app_with_version.tailoring_result = version.tailoring_result
+
+    return templates.TemplateResponse(
+        request,
+        "dashboard/_tailoring_result.html",
+        {"app": app_with_version, "version": version, "versions": versions},
     )
 
 

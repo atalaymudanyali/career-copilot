@@ -1,14 +1,35 @@
 <div class="space-y-4">
-    <div class="mb-1">
-        <a href="/dashboard/{{ app.id }}/cv.pdf"
-           target="_blank"
-           class="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-brand-500 transition text-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Download Tailored CV (PDF)
-        </a>
+    <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-3">
+            <a href="/dashboard/{{ app.id }}/cv.pdf"
+               target="_blank"
+               class="inline-flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-brand-500 transition text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Download Tailored CV (PDF)
+            </a>
+            {% if version %}
+            <span class="text-xs text-slate-500 font-mono">
+                v{{ version.version_number }}
+                {% if version.created_at %}
+                &mdash; {{ version.created_at.strftime('%b %d, %Y at %H:%M') }}
+                {% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div>
+            <button hx-post="/dashboard/{{ app.id }}/tailor"
+                    hx-target="#tailoring-section"
+                    hx-swap="innerHTML"
+                    hx-indicator="#tailor-spinner"
+                    class="text-sm text-brand-400 hover:text-brand-300 font-medium transition">
+                Re-tailor
+            </button>
+            <span id="tailor-spinner" class="htmx-indicator text-sm text-slate-500 ml-2">Tailoring...</span>
+        </div>
     </div>
+
     <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
 
     {% set result = app.tailoring_result %}
@@ -63,14 +84,7 @@
     </div>
     {% endif %}
 
-    <div class="pt-2">
-        <button hx-post="/dashboard/{{ app.id }}/tailor"
-                hx-target="closest div.space-y-4"
-                hx-swap="outerHTML"
-                hx-indicator="#tailor-spinner"
-                class="text-sm text-brand-400 hover:text-brand-300 font-medium transition">
-            Re-tailor
-        </button>
-        <span id="tailor-spinner" class="htmx-indicator text-sm text-slate-500 ml-2">Tailoring...</span>
-    </div>
+    {% if versions and versions|length > 1 %}
+    {% include "dashboard/_version_list.html" %}
+    {% endif %}
 </div>
