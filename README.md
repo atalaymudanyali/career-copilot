@@ -13,6 +13,7 @@ Paste a job description, get back your existing experience reordered and rephras
 - **Application tracker** — CRUD for job applications with status tracking (saved, applied, interviewing, offered, rejected)
 - **Dashboard** — dark-theme server-rendered UI with Jinja2 + HTMX for managing applications, viewing tailoring results, and filtering by status
 - **Pipeline view** — kanban board that groups applications by status for at-a-glance tracking
+- **CV composition** — editable compose view showing the exact bullets that would appear in the PDF; remove, reword, or add custom bullets before generating
 - **PDF export** — generates a tailored CV as a downloadable PDF; favorited bullets go first, remaining slots filled by relevance
 - **CLI mode** — tailor directly from the terminal without a browser
 
@@ -196,13 +197,15 @@ career-copilot/
 │       ├── _pipeline_card.html    # Pipeline card partial
 │       ├── _tailoring_result.html # Tailoring result partial (HTMX)
 │       ├── _bullet_star.html      # Star/unstar toggle button
+│       ├── _compose_section.html   # Editable CV composition view
 │       ├── _notes_section.html    # Bullet-style notes with linkify
+│       ├── favorites.html         # All favorited bullets page
 │       └── _tailor_button.html    # Empty state tailor button
 ├── alembic/                       # Database migrations
 ├── claude-desktop-config.example.json  # Example MCP config for Claude Desktop
 ├── Dockerfile                     # Multi-stage build with uv + WeasyPrint
 ├── docker-compose.yml             # App + Postgres + pgvector
-└── tests/                         # pytest test suite (77 tests)
+└── tests/                         # pytest test suite (106 tests)
 ```
 
 ## "Never Invent" Enforcement
@@ -230,7 +233,7 @@ This is the core design constraint, enforced at three levels:
 | HTTP | httpx | Async HTTP client for Ollama API |
 | Config | pydantic-settings | Type-safe, env-driven configuration |
 | Container | Docker Compose | One-command deployment |
-| Tests | pytest | 101 tests with mocked external services |
+| Tests | pytest | 106 tests with mocked external services |
 | Lint | Ruff | Fast Python linter and formatter |
 
 ## Roadmap
@@ -239,7 +242,7 @@ This is the core design constraint, enforced at three levels:
 - [x] **V1** — RAG with PostgreSQL + pgvector, FastAPI service, Docker Compose
 - [x] **V2** — Application tracker, dashboard (Jinja2/HTMX), pipeline view, PDF export
 - [x] **V3** — MCP server (10 tools for Claude/Cursor), page-fill fix, skill gap analysis
-- [x] **V4** — Dark theme redesign, tailoring versioning, bullet favorites with PDF priority, 14 MCP tools
+- [x] **V4** — Dark theme redesign, tailoring versioning, bullet favorites with PDF priority, CV composition, permanent projects, interests, 14 MCP tools
 
 ## License
 
