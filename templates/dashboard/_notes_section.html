@@ -1,0 +1,45 @@
+<div id="notes-section">
+    <h2 class="text-sm font-medium text-slate-400 mb-2">Notes</h2>
+
+    {% set note_lines = (app.notes or '').split('\n') %}
+
+    {% set has_notes = [] %}
+    {% for note in note_lines %}
+        {% if note.strip() %}
+            {% if has_notes.append(1) %}{% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {% if has_notes %}
+    <ul class="space-y-1.5 mb-3">
+        {% set idx = namespace(val=0) %}
+        {% for note in note_lines %}
+        {% if note.strip() %}
+        <li class="flex items-start gap-2 group bg-surface rounded-lg px-3 py-2 border border-slate-700/30">
+            <span class="text-brand-400 mt-0.5 text-xs shrink-0">&#9679;</span>
+            <span class="text-sm text-slate-300 flex-1 break-words">{{ note.strip() | linkify }}</span>
+            <form hx-post="/dashboard/{{ app.id }}/notes/remove"
+                  hx-target="#notes-section"
+                  hx-swap="outerHTML"
+                  class="inline shrink-0 opacity-0 group-hover:opacity-100 transition">
+                <input type="hidden" name="note_index" value="{{ idx.val }}">
+                <button type="submit" class="text-slate-600 hover:text-red-400 text-sm transition" title="Remove note">&times;</button>
+            </form>
+        </li>
+        {% set idx.val = idx.val + 1 %}
+        {% endif %}
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form hx-post="/dashboard/{{ app.id }}/notes/add"
+          hx-target="#notes-section"
+          hx-swap="outerHTML"
+          class="flex gap-2">
+        <input type="text" name="note_text" placeholder="Add a note (links will be clickable)..."
+               class="flex-1 px-3 py-2 bg-surface border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-500 transition">
+            Add
+        </button>
+    </form>
+</div>

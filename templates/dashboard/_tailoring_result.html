@@ -7,32 +7,82 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                Download Tailored CV (PDF)
+                Download PDF
             </a>
+            {% if versions %}
+            <div class="flex items-center gap-1">
+                <button hx-get="/dashboard/{{ app.id }}/starred"
+                        hx-target="#tailoring-section"
+                        hx-swap="innerHTML"
+                        class="w-7 h-7 rounded-md text-sm transition
+                               {% if is_starred_view %}
+                               bg-amber-400/20 text-amber-400
+                               {% else %}
+                               bg-surface-overlay/50 text-amber-400/60 hover:text-amber-400 hover:bg-amber-400/10
+                               {% endif %}"
+                        title="Favorites">&#9733;</button>
+                {% for v in versions|reverse %}
+                <button hx-get="/dashboard/{{ app.id }}/versions/{{ v.id }}"
+                        hx-target="#tailoring-section"
+                        hx-swap="innerHTML"
+                        class="w-7 h-7 rounded-md text-xs font-bold transition
+                               {% if not is_starred_view and version and v.id == version.id %}
+                               bg-brand-500 text-white
+                               {% else %}
+                               bg-surface-overlay/50 text-slate-400 hover:bg-surface-overlay hover:text-white
+                               {% endif %}"
+                        title="{{ v.created_at.strftime('%b %d, %Y at %H:%M') if v.created_at else '' }}">
+                    {{ v.version_number }}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% if version %}
             <span class="text-xs text-slate-500 font-mono">
                 v{{ version.version_number }}
                 {% if version.created_at %}
-                &mdash; {{ version.created_at.strftime('%b %d, %Y at %H:%M') }}
+                &mdash; {{ version.created_at.strftime('%b %d at %H:%M') }}
                 {% endif %}
             </span>
+            {% elif is_starred_view %}
+            <span class="text-xs text-amber-400/70 font-medium">Favorites</span>
             {% endif %}
         </div>
-        <div>
+        <div class="flex items-center gap-2">
+            {% if version and versions|length > 1 %}
+            <button hx-delete="/dashboard/{{ app.id }}/versions/{{ version.id }}"
+                    hx-target="#tailoring-section"
+                    hx-swap="innerHTML"
+                    hx-confirm="Delete version {{ version.version_number }}? This cannot be undone."
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 ring-1 ring-red-500/20 transition"
+                    title="Delete this version">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+            </button>
+            {% endif %}
             <button hx-post="/dashboard/{{ app.id }}/tailor"
                     hx-target="#tailoring-section"
                     hx-swap="innerHTML"
                     hx-indicator="#tailor-spinner"
-                    class="text-sm text-brand-400 hover:text-brand-300 font-medium transition">
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 ring-1 ring-brand-500/20 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
                 Re-tailor
             </button>
             <span id="tailor-spinner" class="htmx-indicator text-sm text-slate-500 ml-2">Tailoring...</span>
         </div>
     </div>
 
-    <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
-
     {% set result = app.tailoring_result %}
+
+    {% if is_starred_view %}
+    <h2 class="text-sm font-medium text-amber-400/70">Starred Bullets</h2>
+    {% else %}
+    <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
+    {% endif %}
 
     {% if result.get("tailored_bullets") %}
     <div class="bg-surface rounded-lg border border-slate-700/50 overflow-hidden">
@@ -70,8 +120,48 @@
             </tbody>
         </table>
     </div>
+    {% elif is_starred_view %}
+    <div class="bg-surface rounded-lg border border-slate-700/50 p-8 text-center">
+        <div class="text-2xl mb-2 text-slate-600">&#9734;</div>
+        <p class="text-sm text-slate-500">No favorites yet — star bullets from your tailoring results</p>
+    </div>
     {% endif %}
 
+    {% if is_starred_view and version_fits %}
+    <div>
+        <div class="flex items-center gap-2 mb-2">
+            <h3 class="text-sm font-medium text-slate-400">Why I'm a Good Fit</h3>
+            <div class="flex gap-1 items-center">
+                <span class="text-[10px] text-slate-500 mr-0.5">use from v</span>
+                {% for vf in version_fits %}
+                <button hx-post="/dashboard/{{ app.id }}/use-fit/{{ vf.version_id }}"
+                        hx-target="#tailoring-section"
+                        hx-swap="innerHTML"
+                        class="w-5 h-5 rounded text-[10px] font-bold transition cursor-pointer
+                               {% if vf.is_active %}bg-brand-500 text-white{% else %}bg-surface-overlay/50 text-slate-400 hover:bg-surface-overlay hover:text-white{% endif %}"
+                        title="Use Why I'm a Good Fit from version {{ vf.version_number }}">
+                    {{ vf.version_number }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% for vf in version_fits %}
+            {% if vf.is_active %}
+            {% if vf.why_i_fit %}
+            <p class="text-sm text-slate-300 bg-brand-500/10 border border-brand-500/20 rounded-lg p-3">{{ vf.why_i_fit }}</p>
+            {% endif %}
+            {% if vf.gaps %}
+            <h3 class="text-sm font-medium text-slate-400 mb-1 mt-3">Gaps to Address</h3>
+            <ul class="list-disc list-inside text-sm text-slate-300 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                {% for gap in vf.gaps %}
+                <li>{{ gap }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
     {% if result.get("why_i_fit") %}
     <div>
         <h3 class="text-sm font-medium text-slate-400 mb-1">Why I'm a Good Fit</h3>
@@ -89,8 +179,5 @@
         </ul>
     </div>
     {% endif %}
-
-    {% if versions and versions|length > 1 %}
-    {% include "dashboard/_version_list.html" %}
     {% endif %}
 </div>

@@ -1,0 +1,8 @@
+<button hx-post="/dashboard/{{ app.id }}/tailor"
+        hx-target="#tailoring-section"
+        hx-swap="innerHTML"
+        hx-indicator="#tailor-spinner"
+        class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition">
+    Tailor CV for This Job
+</button>
+<span id="tailor-spinner" class="htmx-indicator text-sm text-slate-400 ml-2">Tailoring... this may take a moment</span>

@@ -15,6 +15,7 @@ from career_copilot.services.applications import (
 from career_copilot.services.favorites import (
     get_favorited_texts,
     list_all_favorites,
+    list_favorites,
     toggle_favorite,
 )
 from career_copilot.services.pdf import generate_cv_pdf
@@ -22,6 +23,8 @@ from career_copilot.services.retrieval import retrieve
 from career_copilot.services.tailoring import get_source_chunks, tailor_rag
 from career_copilot.services.tailoring_versions import (
     create_version,
+    delete_version,
+    get_latest_version,
     get_version,
     list_versions,
 )
@@ -243,6 +246,166 @@ async def dashboard_tailor(
     )
 
 
+@router.post("/dashboard/{application_id}/notes/add")
+async def dashboard_add_note(
+    request: Request,
+    application_id: int,
+    note_text: str = Form(),
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    note_text = note_text.strip()
+    if note_text:
+        existing = application.notes or ""
+        new_notes = f"{existing}\n{note_text}" if existing.strip() else note_text
+        data = ApplicationUpdate(notes=new_notes)
+        application = await update_application(session, application, data)
+
+    return templates.TemplateResponse(
+        request, "dashboard/_notes_section.html", {"app": application}
+    )
+
+
+@router.post("/dashboard/{application_id}/notes/remove")
+async def dashboard_remove_note(
+    request: Request,
+    application_id: int,
+    note_index: int = Form(),
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    lines = (application.notes or "").split("\n")
+    notes = [n for n in lines if n.strip()]
+    if 0 <= note_index < len(notes):
+        notes.pop(note_index)
+
+    new_notes = "\n".join(notes) if notes else None
+    data = ApplicationUpdate(notes=new_notes)
+    application = await update_application(session, application, data)
+
+    return templates.TemplateResponse(
+        request, "dashboard/_notes_section.html", {"app": application}
+    )
+
+
+@router.get("/dashboard/{application_id}/starred")
+async def dashboard_starred_bullets(
+    request: Request,
+    application_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    favorites = await list_favorites(session, application_id)
+    versions = await list_versions(session, application_id)
+
+    starred_result = {
+        "tailored_bullets": [
+            {"text": f.bullet_text, "source_id": f.source_id, "relevance": f.relevance}
+            for f in favorites
+        ],
+    }
+    if versions:
+        latest = versions[0]
+        if latest.tailoring_result:
+            starred_result["why_i_fit"] = latest.tailoring_result.get("why_i_fit", "")
+            starred_result["gaps"] = latest.tailoring_result.get("gaps", [])
+
+    active_fit = starred_result.get("why_i_fit", "")
+    version_fits = []
+    for v in reversed(versions):
+        if v.tailoring_result:
+            version_fits.append({
+                "version_number": v.version_number,
+                "version_id": v.id,
+                "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
+                "gaps": v.tailoring_result.get("gaps", []),
+                "is_active": v.tailoring_result.get("why_i_fit", "") == active_fit,
+            })
+
+    application.tailoring_result = starred_result
+    favorited = await get_favorited_texts(session, application_id)
+    return templates.TemplateResponse(
+        request,
+        "dashboard/_tailoring_result.html",
+        {
+            "app": application,
+            "version": None,
+            "versions": versions,
+            "favorited_texts": favorited,
+            "is_starred_view": True,
+            "version_fits": version_fits,
+        },
+    )
+
+
+@router.post("/dashboard/{application_id}/use-fit/{version_id}")
+async def dashboard_use_fit(
+    request: Request,
+    application_id: int,
+    version_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    version = await get_version(session, version_id)
+    if not version or version.application_id != application_id:
+        return HTMLResponse("Version not found", status_code=404)
+
+    result = dict(application.tailoring_result or {})
+    result["why_i_fit"] = version.tailoring_result.get("why_i_fit", "")
+    result["gaps"] = version.tailoring_result.get("gaps", [])
+    await store_tailoring_result(session, application, result)
+
+    favorites = await list_favorites(session, application_id)
+    versions = await list_versions(session, application_id)
+
+    starred_result = {
+        "tailored_bullets": [
+            {"text": f.bullet_text, "source_id": f.source_id, "relevance": f.relevance}
+            for f in favorites
+        ],
+        "why_i_fit": result["why_i_fit"],
+        "gaps": result["gaps"],
+    }
+
+    version_fits = []
+    for v in reversed(versions):
+        if v.tailoring_result:
+            version_fits.append({
+                "version_number": v.version_number,
+                "version_id": v.id,
+                "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
+                "gaps": v.tailoring_result.get("gaps", []),
+                "is_active": v.tailoring_result.get("why_i_fit", "") == result["why_i_fit"],
+            })
+
+    application.tailoring_result = starred_result
+    favorited = await get_favorited_texts(session, application_id)
+    return templates.TemplateResponse(
+        request,
+        "dashboard/_tailoring_result.html",
+        {
+            "app": application,
+            "version": None,
+            "versions": versions,
+            "favorited_texts": favorited,
+            "is_starred_view": True,
+            "version_fits": version_fits,
+        },
+    )
+
+
 @router.get("/dashboard/{application_id}/versions/{version_id}")
 async def dashboard_version_detail(
     request: Request,
@@ -259,20 +422,57 @@ async def dashboard_version_detail(
         return HTMLResponse("Version not found", status_code=404)
 
     versions = await list_versions(session, application_id)
-
-    app_with_version = application
-    app_with_version.tailoring_result = version.tailoring_result
+    application.tailoring_result = version.tailoring_result
 
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/_tailoring_result.html",
         {
-            "app": app_with_version,
+            "app": application,
             "version": version,
             "versions": versions,
             "favorited_texts": favorited,
         },
+    )
+
+
+@router.delete("/dashboard/{application_id}/versions/{version_id}")
+async def dashboard_delete_version(
+    request: Request,
+    application_id: int,
+    version_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    application = await get_application(session, application_id)
+    if not application:
+        return HTMLResponse("Not found", status_code=404)
+
+    version = await get_version(session, version_id)
+    if not version or version.application_id != application_id:
+        return HTMLResponse("Version not found", status_code=404)
+
+    await delete_version(session, version)
+
+    latest = await get_latest_version(session, application_id)
+    if latest:
+        await store_tailoring_result(session, application, latest.tailoring_result)
+        versions = await list_versions(session, application_id)
+        favorited = await get_favorited_texts(session, application_id)
+        return templates.TemplateResponse(
+            request,
+            "dashboard/_tailoring_result.html",
+            {
+                "app": application,
+                "version": latest,
+                "versions": versions,
+                "favorited_texts": favorited,
+            },
+        )
+
+    await store_tailoring_result(session, application, None)
+    return templates.TemplateResponse(
+        request, "dashboard/_tailor_button.html", {"app": application}
     )
 
 
@@ -285,7 +485,11 @@ async def download_cv_pdf(
     if not application or not application.tailoring_result:
         return HTMLResponse("Application not found or not yet tailored", status_code=404)
 
-    pdf_bytes = generate_cv_pdf(application.tailoring_result, application.company, application.role)
+    favorited = await get_favorited_texts(session, application_id)
+    pdf_bytes = generate_cv_pdf(
+        application.tailoring_result, application.company, application.role,
+        favorite_texts=set(favorited),
+    )
     filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
     return Response(
         content=pdf_bytes,

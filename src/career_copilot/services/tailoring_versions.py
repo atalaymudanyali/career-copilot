@@ -45,6 +45,11 @@ async def get_version(
     return result.scalar_one_or_none()
 
 
+async def delete_version(session: AsyncSession, version: TailoringVersion) -> None:
+    await session.delete(version)
+    await session.commit()
+
+
 async def get_latest_version(
     session: AsyncSession, application_id: int
 ) -> TailoringVersion | None:

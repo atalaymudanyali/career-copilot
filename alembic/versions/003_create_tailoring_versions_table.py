@@ -5,6 +5,7 @@ Revises: 002
 Create Date: 2026-08-26
 """
 
+import json
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -44,13 +45,16 @@ def upgrade() -> None:
         )
     )
     for app in apps_with_results:
+        result = app.tailoring_result
+        if isinstance(result, dict):
+            result = json.dumps(result)
         conn.execute(
             sa.text(
                 "INSERT INTO tailoring_versions "
                 "(application_id, version_number, tailoring_result) "
-                "VALUES (:app_id, 1, :result)"
+                "VALUES (:app_id, 1, CAST(:result AS json))"
             ),
-            {"app_id": app.id, "result": app.tailoring_result},
+            {"app_id": app.id, "result": result},
         )
 
 

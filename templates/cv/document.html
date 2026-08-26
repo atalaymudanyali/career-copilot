@@ -259,6 +259,16 @@
 {% endfor %}
 {% endif %}
 
+<!-- Projects -->
+{% if project_bullets %}
+<div class="section-title">Projects</div>
+<ul class="bullet-list">
+    {% for bullet_text in project_bullets %}
+    <li>{{ bullet_text }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
 <!-- Education -->
 {% if cv.education %}
 <div class="section-title">Education</div>
