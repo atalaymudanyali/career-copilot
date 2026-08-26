@@ -5,27 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Career Copilot{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                        surface: {
+                            DEFAULT: '#0f172a',
+                            raised: '#1e293b',
+                            overlay: '#334155',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <style>
-        [htmx-indicator] { display: none; }
-        .htmx-request [htmx-indicator] { display: inline-block; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
         .htmx-request.htmx-indicator { display: inline-block; }
+
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient-shift 8s ease infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+            animation: float 6s ease-in-out 2s infinite;
+        }
+
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out both;
+        }
+
+        .nav-link {
+            position: relative;
+            transition: color 0.2s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #818cf8;
+            transition: width 0.2s ease;
+            border-radius: 1px;
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+        .nav-link.active {
+            color: #a5b4fc;
+        }
+
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgb(99 102 241 / 0.2);
+            border-color: #4f46e5;
+        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/" class="text-xl font-bold text-gray-900">Career Copilot</a>
-            <div class="flex gap-4">
-                <a href="/dashboard" class="text-gray-600 hover:text-gray-900 font-medium">Dashboard</a>
-                <a href="/dashboard/pipeline" class="text-gray-600 hover:text-gray-900 font-medium">Pipeline</a>
-                <a href="/docs" class="text-gray-600 hover:text-gray-900 font-medium">API Docs</a>
+<body class="bg-surface min-h-screen flex flex-col text-gray-100">
+    <nav class="bg-surface-raised/95 border-b border-slate-700/50 sticky top-0 z-50 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="flex items-center justify-between h-14">
+                <a href="/" class="flex items-center gap-2 group">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-lg font-bold text-white">Career Copilot</span>
+                </a>
+                <div class="flex items-center gap-6">
+                    {% set nav_items = [
+                        ("/dashboard", "Dashboard"),
+                        ("/dashboard/pipeline", "Pipeline"),
+                        ("/docs", "API Docs"),
+                    ] %}
+                    {% for path, label in nav_items %}
+                    <a href="{{ path }}"
+                       class="nav-link text-sm font-medium {{ 'active text-brand-300' if request.url.path == path else 'text-slate-400 hover:text-white' }}">
+                        {{ label }}
+                    </a>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto px-4 py-6">
+    <main class="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full">
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="border-t border-slate-800 bg-surface-raised/50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-slate-500">
+            <span>Career Copilot</span>
+            <span>Built with FastAPI and HTMX</span>
+        </div>
+    </footer>
 </body>
 </html>
