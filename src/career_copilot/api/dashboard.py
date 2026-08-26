@@ -121,9 +121,7 @@ async def dashboard_toggle_favorite(
     relevance: str = Form("medium"),
     session: AsyncSession = Depends(get_session),
 ):
-    is_favorited = await toggle_favorite(
-        session, application_id, bullet_text, source_id, relevance
-    )
+    is_favorited = await toggle_favorite(session, application_id, bullet_text, source_id, relevance)
     return templates.TemplateResponse(
         request,
         "dashboard/_bullet_star.html",
@@ -147,9 +145,7 @@ async def dashboard_detail(
 ):
     application = await get_application(session, application_id)
     if not application:
-        return templates.TemplateResponse(
-            request, "dashboard/404.html", status_code=404
-        )
+        return templates.TemplateResponse(request, "dashboard/404.html", status_code=404)
     statuses = [s.value for s in ApplicationStatus]
     versions = await list_versions(session, application_id)
     favorited = await get_favorited_texts(session, application_id)
@@ -194,9 +190,7 @@ async def dashboard_update(
         "versions": versions,
         "favorited_texts": favorited,
     }
-    return templates.TemplateResponse(
-        request, "dashboard/detail.html", ctx
-    )
+    return templates.TemplateResponse(request, "dashboard/detail.html", ctx)
 
 
 @router.post("/dashboard/{application_id}/tailor")
@@ -323,13 +317,15 @@ async def dashboard_starred_bullets(
     version_fits = []
     for v in reversed(versions):
         if v.tailoring_result:
-            version_fits.append({
-                "version_number": v.version_number,
-                "version_id": v.id,
-                "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
-                "gaps": v.tailoring_result.get("gaps", []),
-                "is_active": v.tailoring_result.get("why_i_fit", "") == active_fit,
-            })
+            version_fits.append(
+                {
+                    "version_number": v.version_number,
+                    "version_id": v.id,
+                    "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
+                    "gaps": v.tailoring_result.get("gaps", []),
+                    "is_active": v.tailoring_result.get("why_i_fit", "") == active_fit,
+                }
+            )
 
     application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
@@ -382,13 +378,15 @@ async def dashboard_use_fit(
     version_fits = []
     for v in reversed(versions):
         if v.tailoring_result:
-            version_fits.append({
-                "version_number": v.version_number,
-                "version_id": v.id,
-                "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
-                "gaps": v.tailoring_result.get("gaps", []),
-                "is_active": v.tailoring_result.get("why_i_fit", "") == result["why_i_fit"],
-            })
+            version_fits.append(
+                {
+                    "version_number": v.version_number,
+                    "version_id": v.id,
+                    "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
+                    "gaps": v.tailoring_result.get("gaps", []),
+                    "is_active": v.tailoring_result.get("why_i_fit", "") == result["why_i_fit"],
+                }
+            )
 
     application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
@@ -487,7 +485,9 @@ async def download_cv_pdf(
 
     favorited = await get_favorited_texts(session, application_id)
     pdf_bytes = generate_cv_pdf(
-        application.tailoring_result, application.company, application.role,
+        application.tailoring_result,
+        application.company,
+        application.role,
         favorite_texts=set(favorited),
     )
     filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")

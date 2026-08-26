@@ -16,9 +16,7 @@ def _mock_session():
 
 
 SAMPLE_RESULT = {
-    "tailored_bullets": [
-        {"text": "Built APIs", "source_id": "exp1:b1", "relevance": "high"}
-    ],
+    "tailored_bullets": [{"text": "Built APIs", "source_id": "exp1:b1", "relevance": "high"}],
     "why_i_fit": "Strong backend skills",
     "gaps": [],
 }

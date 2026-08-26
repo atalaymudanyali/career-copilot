@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "career-copilot-dev",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "uvicorn", "career_copilot.main:app", "--reload", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}

@@ -25,9 +25,7 @@ async def create_version(
     return version
 
 
-async def list_versions(
-    session: AsyncSession, application_id: int
-) -> list[TailoringVersion]:
+async def list_versions(session: AsyncSession, application_id: int) -> list[TailoringVersion]:
     result = await session.execute(
         select(TailoringVersion)
         .where(TailoringVersion.application_id == application_id)
@@ -36,9 +34,7 @@ async def list_versions(
     return list(result.scalars().all())
 
 
-async def get_version(
-    session: AsyncSession, version_id: int
-) -> TailoringVersion | None:
+async def get_version(session: AsyncSession, version_id: int) -> TailoringVersion | None:
     result = await session.execute(
         select(TailoringVersion).where(TailoringVersion.id == version_id)
     )
@@ -50,9 +46,7 @@ async def delete_version(session: AsyncSession, version: TailoringVersion) -> No
     await session.commit()
 
 
-async def get_latest_version(
-    session: AsyncSession, application_id: int
-) -> TailoringVersion | None:
+async def get_latest_version(session: AsyncSession, application_id: int) -> TailoringVersion | None:
     result = await session.execute(
         select(TailoringVersion)
         .where(TailoringVersion.application_id == application_id)

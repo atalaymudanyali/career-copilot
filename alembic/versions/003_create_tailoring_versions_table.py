@@ -39,10 +39,7 @@ def upgrade() -> None:
 
     conn = op.get_bind()
     apps_with_results = conn.execute(
-        sa.text(
-            "SELECT id, tailoring_result FROM applications "
-            "WHERE tailoring_result IS NOT NULL"
-        )
+        sa.text("SELECT id, tailoring_result FROM applications WHERE tailoring_result IS NOT NULL")
     )
     for app in apps_with_results:
         result = app.tailoring_result

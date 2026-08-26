@@ -64,8 +64,6 @@ async def get_favorited_texts(
     application_id: int,
 ) -> set[str]:
     result = await session.execute(
-        select(FavoriteBullet.bullet_text).where(
-            FavoriteBullet.application_id == application_id
-        )
+        select(FavoriteBullet.bullet_text).where(FavoriteBullet.application_id == application_id)
     )
     return set(result.scalars().all())

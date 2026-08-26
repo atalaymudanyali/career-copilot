@@ -71,7 +71,9 @@ async def test_download_cv_pdf_returns_pdf(mock_get, mock_favs, mock_pdf):
     assert resp.headers["content-type"] == "application/pdf"
     assert b"%PDF-mock-content" in resp.content
     mock_pdf.assert_called_once_with(
-        application.tailoring_result, application.company, application.role,
+        application.tailoring_result,
+        application.company,
+        application.role,
         favorite_texts={"Built REST APIs with .NET Core"},
     )
 
