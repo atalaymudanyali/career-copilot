@@ -12,6 +12,11 @@ from career_copilot.services.applications import (
     store_tailoring_result,
     update_application,
 )
+from career_copilot.services.favorites import (
+    get_favorited_texts,
+    list_all_favorites,
+    toggle_favorite,
+)
 from career_copilot.services.pdf import generate_cv_pdf
 from career_copilot.services.retrieval import retrieve
 from career_copilot.services.tailoring import get_source_chunks, tailor_rag
@@ -86,6 +91,51 @@ async def dashboard_pipeline(
     )
 
 
+@router.get("/dashboard/favorites")
+async def dashboard_favorites(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    favorites = await list_all_favorites(session)
+    apps_by_id: dict[int, object] = {}
+    for fav in favorites:
+        if fav.application_id not in apps_by_id:
+            app = await get_application(session, fav.application_id)
+            apps_by_id[fav.application_id] = app
+    return templates.TemplateResponse(
+        request,
+        "dashboard/favorites.html",
+        {"favorites": favorites, "apps_by_id": apps_by_id},
+    )
+
+
+@router.post("/dashboard/favorites/toggle")
+async def dashboard_toggle_favorite(
+    request: Request,
+    application_id: int = Form(),
+    bullet_text: str = Form(),
+    source_id: str = Form(),
+    relevance: str = Form("medium"),
+    session: AsyncSession = Depends(get_session),
+):
+    is_favorited = await toggle_favorite(
+        session, application_id, bullet_text, source_id, relevance
+    )
+    return templates.TemplateResponse(
+        request,
+        "dashboard/_bullet_star.html",
+        {
+            "bullet": {
+                "text": bullet_text,
+                "source_id": source_id,
+                "relevance": relevance,
+            },
+            "app_id": application_id,
+            "is_favorited": is_favorited,
+        },
+    )
+
+
 @router.get("/dashboard/{application_id}")
 async def dashboard_detail(
     request: Request,
@@ -94,13 +144,21 @@ async def dashboard_detail(
 ):
     application = await get_application(session, application_id)
     if not application:
-        return templates.TemplateResponse(request, "dashboard/404.html", status_code=404)
+        return templates.TemplateResponse(
+            request, "dashboard/404.html", status_code=404
+        )
     statuses = [s.value for s in ApplicationStatus]
     versions = await list_versions(session, application_id)
+    favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/detail.html",
-        {"app": application, "statuses": statuses, "versions": versions},
+        {
+            "app": application,
+            "statuses": statuses,
+            "versions": versions,
+            "favorited_texts": favorited,
+        },
     )
 
 
@@ -126,7 +184,13 @@ async def dashboard_update(
 
     statuses = [s.value for s in ApplicationStatus]
     versions = await list_versions(session, application_id)
-    ctx = {"app": application, "statuses": statuses, "versions": versions}
+    favorited = await get_favorited_texts(session, application_id)
+    ctx = {
+        "app": application,
+        "statuses": statuses,
+        "versions": versions,
+        "favorited_texts": favorited,
+    }
     return templates.TemplateResponse(
         request, "dashboard/detail.html", ctx
     )
@@ -152,20 +216,30 @@ async def dashboard_tailor(
     version = await create_version(session, application.id, result_dict)
 
     is_htmx = request.headers.get("HX-Request") == "true"
+    versions = await list_versions(session, application.id)
+    favorited = await get_favorited_texts(session, application_id)
     if is_htmx:
-        versions = await list_versions(session, application.id)
         return templates.TemplateResponse(
             request,
             "dashboard/_tailoring_result.html",
-            {"app": application, "version": version, "versions": versions},
+            {
+                "app": application,
+                "version": version,
+                "versions": versions,
+                "favorited_texts": favorited,
+            },
         )
 
     statuses = [s.value for s in ApplicationStatus]
-    versions = await list_versions(session, application.id)
     return templates.TemplateResponse(
         request,
         "dashboard/detail.html",
-        {"app": application, "statuses": statuses, "versions": versions},
+        {
+            "app": application,
+            "statuses": statuses,
+            "versions": versions,
+            "favorited_texts": favorited,
+        },
     )
 
 
@@ -189,10 +263,16 @@ async def dashboard_version_detail(
     app_with_version = application
     app_with_version.tailoring_result = version.tailoring_result
 
+    favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/_tailoring_result.html",
-        {"app": app_with_version, "version": version, "versions": versions},
+        {
+            "app": app_with_version,
+            "version": version,
+            "versions": versions,
+            "favorited_texts": favorited,
+        },
     )
 
 

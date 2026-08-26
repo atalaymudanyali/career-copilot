@@ -39,6 +39,7 @@
         <table class="w-full">
             <thead class="border-b border-slate-700/50">
                 <tr>
+                    <th class="px-2 py-2 w-10"></th>
                     <th class="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider">Bullet</th>
                     <th class="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider w-32">Source</th>
                     <th class="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase tracking-wider w-24">Relevance</th>
@@ -47,6 +48,11 @@
             <tbody>
                 {% for bullet in result["tailored_bullets"] %}
                 <tr class="border-b border-slate-700/30">
+                    <td class="px-2 py-3 text-center">
+                        {% set is_favorited = bullet["text"] in (favorited_texts or []) %}
+                        {% set app_id = app.id %}
+                        {% include "dashboard/_bullet_star.html" %}
+                    </td>
                     <td class="px-4 py-3 text-sm text-slate-300">{{ bullet["text"] }}</td>
                     <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ bullet["source_id"] }}</td>
                     <td class="px-4 py-3">

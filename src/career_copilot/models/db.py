@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -56,3 +56,22 @@ class TailoringVersion(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     application: Mapped["Application"] = relationship(back_populates="tailoring_versions")
+
+
+class FavoriteBullet(Base):
+    __tablename__ = "favorite_bullets"
+    __table_args__ = (
+        UniqueConstraint("application_id", "bullet_text"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("applications.id", ondelete="CASCADE"),
+    )
+    bullet_text: Mapped[str] = mapped_column(Text)
+    source_id: Mapped[str] = mapped_column(String(255))
+    relevance: Mapped[str] = mapped_column(String(20), default="medium")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
