@@ -399,3 +399,35 @@ async def test_update_application_status_invalid():
     result = await update_application_status(1, "invalid_status")
     assert "Invalid status" in result
     assert "saved" in result
+
+
+# --- PDF generation tool tests ---
+
+
+@pytest.mark.asyncio
+@patch(
+    "career_copilot.services.pdf.generate_cv_pdf",
+    return_value=b"%PDF-1.4 fake",
+)
+@patch("career_copilot.mcp_server.tailor")
+async def test_generate_cv_pdf_returns_path(mock_tailor, mock_make_pdf):
+    from career_copilot.mcp_server import generate_cv_pdf
+
+    mock_tailor.return_value = _sample_tailoring_result()
+    result = await generate_cv_pdf("Backend dev role", "Google", "SWE")
+    assert "PDF generated" in result
+    assert "Google" in result
+    assert "SWE" in result
+    assert result.endswith(".pdf")
+
+
+@pytest.mark.asyncio
+@patch(
+    "career_copilot.mcp_server.tailor",
+    side_effect=httpx.ConnectError(""),
+)
+async def test_generate_cv_pdf_ollama_unavailable(mock_tailor):
+    from career_copilot.mcp_server import generate_cv_pdf
+
+    result = await generate_cv_pdf("Any JD", "Google", "SWE")
+    assert "Cannot connect to Ollama" in result

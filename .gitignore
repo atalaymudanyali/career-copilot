@@ -21,5 +21,8 @@ wheels/
 .DS_Store
 Thumbs.db
 
+# Generated PDFs
+output/
+
 # Personal study notes
 docs/commit-explanations.md

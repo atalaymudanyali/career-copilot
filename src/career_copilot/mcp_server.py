@@ -296,5 +296,38 @@ async def update_application_status(application_id: int, status: str) -> str:
     return f"Application #{app.id} ({app.company} — {app.role}) updated to [{app.status}]"
 
 
+@mcp.tool()
+async def generate_cv_pdf(job_description: str, company: str, role: str) -> str:
+    """Tailor the CV for a job and generate a PDF file."""
+    try:
+        result = await tailor(job_description)
+    except httpx.ConnectError:
+        return OLLAMA_UNAVAILABLE
+
+    try:
+        from career_copilot.services.pdf import generate_cv_pdf as make_pdf
+    except ImportError:
+        return "WeasyPrint is not installed. Install it with: uv pip install weasyprint"
+
+    result_dict = result.model_dump()
+    pdf_bytes = make_pdf(result_dict, company, role)
+
+    from pathlib import Path
+
+    output_dir = Path(__file__).resolve().parents[2] / "output"
+    output_dir.mkdir(exist_ok=True)
+
+    from datetime import datetime
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_company = company.replace(" ", "_")
+    safe_role = role.replace(" ", "_")
+    filename = f"CV_{safe_company}_{safe_role}_{timestamp}.pdf"
+    filepath = output_dir / filename
+    filepath.write_bytes(pdf_bytes)
+
+    return f"PDF generated: {filepath}"
+
+
 def main():
     mcp.run()
