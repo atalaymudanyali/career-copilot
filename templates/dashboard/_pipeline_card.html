@@ -1,11 +1,11 @@
 <a href="/dashboard/{{ app.id }}"
-   class="block bg-white rounded-md border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition">
-    <div class="font-medium text-sm text-gray-900 mb-1">{{ app.company }}</div>
-    <div class="text-xs text-gray-500 mb-2">{{ app.role }}</div>
+   class="block bg-surface rounded-lg border border-slate-600/50 p-3 hover:border-brand-500/50 hover:bg-surface-raised transition">
+    <div class="font-medium text-sm text-white mb-1">{{ app.company }}</div>
+    <div class="text-xs text-slate-400 mb-2">{{ app.role }}</div>
     <div class="flex items-center justify-between">
-        <span class="text-xs text-gray-400">{{ app.created_at.strftime('%b %d') if app.created_at else '' }}</span>
+        <span class="text-xs text-slate-500">{{ app.created_at.strftime('%b %d') if app.created_at else '' }}</span>
         {% if app.tailoring_result %}
-        <span class="text-xs text-green-600 font-medium">Tailored</span>
+        <span class="text-xs text-green-400 font-medium">Tailored</span>
         {% endif %}
     </div>
 </a>
