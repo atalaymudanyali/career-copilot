@@ -51,7 +51,10 @@ def test_cv_pdf_route_registered():
 
 @pytest.mark.asyncio
 @patch("career_copilot.api.dashboard.generate_cv_pdf", return_value=b"%PDF-mock-content")
-@patch("career_copilot.api.dashboard.get_favorited_texts", return_value=["Built REST APIs with .NET Core"])
+@patch(
+    "career_copilot.api.dashboard.get_favorited_texts",
+    return_value=["Built REST APIs with .NET Core"],
+)
 @patch("career_copilot.api.dashboard.get_application")
 async def test_download_cv_pdf_returns_pdf(mock_get, mock_favs, mock_pdf):
     from fastapi.testclient import TestClient
