@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "career-copilot": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/career-copilot",
+        "run",
+        "career-copilot-mcp"
+      ]
+    }
+  }
+}

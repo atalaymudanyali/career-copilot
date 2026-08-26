@@ -6,6 +6,7 @@ Paste a job description, get back your existing experience reordered and rephras
 
 ## Features
 
+- **MCP server** — 10 tools accessible from Claude Desktop, Claude Code, or Cursor for conversational CV tailoring, gap analysis, application tracking, and PDF generation
 - **RAG-powered tailoring** — embeds your job description, retrieves the most relevant CV chunks via pgvector, and generates tailored bullets with source traceability
 - **Application tracker** — CRUD for job applications with status tracking (saved, applied, interviewing, offered, rejected)
 - **Dashboard** — server-rendered UI with Jinja2 + HTMX for managing applications, viewing tailoring results, and filtering by status
@@ -72,6 +73,52 @@ career-copilot tailor --jd jd.txt --model mistral
 career-copilot tailor --jd jd.txt --api
 ```
 
+### MCP Server (Claude Desktop / Claude Code / Cursor)
+
+The MCP server exposes all functionality as conversational tools. No Docker required for basic use.
+
+**Setup for Claude Desktop:**
+
+1. Install dependencies: `uv sync`
+2. Copy the config into Claude Desktop's settings:
+
+```json
+{
+  "mcpServers": {
+    "career-copilot": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/career-copilot", "run", "career-copilot-mcp"]
+    }
+  }
+}
+```
+
+On Windows, the config file is at `%APPDATA%\Claude\claude_desktop_config.json`.
+On macOS, it's at `~/Library/Application Support/Claude/claude_desktop_config.json`.
+
+3. Restart Claude Desktop — tools appear under the Connectors menu.
+
+**Available tools:**
+
+| Tool | Needs | What it does |
+|------|-------|-------------|
+| `get_cv_summary` | Nothing | Candidate overview |
+| `list_skills` | Nothing | Skills by category |
+| `list_source_chunks` | Nothing | Raw CV/project chunks |
+| `tailor_cv` | Ollama | Tailor bullets for a job description |
+| `analyze_skill_gaps` | Ollama | Gap analysis for a job description |
+| `generate_cv_pdf` | Ollama + WeasyPrint | Tailor + generate PDF in one call |
+| `list_applications` | Docker | List tracked applications |
+| `add_application` | Docker | Save a new application |
+| `get_application` | Docker | Full application details |
+| `update_application_status` | Docker | Change application status |
+
+**Example prompts:**
+- "Tailor my CV for this role: [paste JD]"
+- "What skills am I missing for this job? [paste JD]"
+- "Generate a PDF for the Backend Developer role at Google: [paste JD]"
+- "Save this job posting" / "Show my applications" / "Update #1 to interviewing"
+
 ### Edit Your CV Data
 
 - **`data/cv.json`** — your structured CV (contact, education, skills, experience)
@@ -103,6 +150,7 @@ career-copilot/
 │   └── projects/*.md              # Project descriptions (YAML frontmatter)
 ├── src/career_copilot/
 │   ├── cli.py                     # Typer CLI (local + API mode)
+│   ├── mcp_server.py              # MCP server (10 tools for Claude/Cursor)
 │   ├── config.py                  # pydantic-settings configuration
 │   ├── db.py                      # Async database session management
 │   ├── main.py                    # FastAPI application
@@ -139,9 +187,10 @@ career-copilot/
 │       ├── _pipeline_card.html    # Pipeline card partial
 │       └── _tailoring_result.html # Tailoring result partial (HTMX)
 ├── alembic/                       # Database migrations
+├── claude-desktop-config.example.json  # Example MCP config for Claude Desktop
 ├── Dockerfile                     # Multi-stage build with uv + WeasyPrint
 ├── docker-compose.yml             # App + Postgres + pgvector
-└── tests/                         # pytest test suite (50 tests)
+└── tests/                         # pytest test suite (77 tests)
 ```
 
 ## "Never Invent" Enforcement
@@ -164,11 +213,12 @@ This is the core design constraint, enforced at three levels:
 | Vector DB | PostgreSQL + pgvector | Cosine similarity search for RAG |
 | ORM | SQLAlchemy 2.0 (async) | Type-safe async database access |
 | Migrations | Alembic | Versioned schema changes |
+| MCP | mcp[cli] | Model Context Protocol server for AI assistants |
 | PDF | WeasyPrint | HTML/CSS to PDF with Cairo + Pango |
 | HTTP | httpx | Async HTTP client for Ollama API |
 | Config | pydantic-settings | Type-safe, env-driven configuration |
 | Container | Docker Compose | One-command deployment |
-| Tests | pytest | 50 tests with mocked external services |
+| Tests | pytest | 77 tests with mocked external services |
 | Lint | Ruff | Fast Python linter and formatter |
 
 ## Roadmap
@@ -176,7 +226,8 @@ This is the core design constraint, enforced at three levels:
 - [x] **V0** — CLI tailoring tool with structured output and source validation
 - [x] **V1** — RAG with PostgreSQL + pgvector, FastAPI service, Docker Compose
 - [x] **V2** — Application tracker, dashboard (Jinja2/HTMX), pipeline view, PDF export
-- [ ] **V3** — Tailoring versioning, bullet favorites, MCP server for Claude/Cursor
+- [x] **V3** — MCP server (10 tools for Claude/Cursor), page-fill fix, skill gap analysis
+- [ ] **V4** — Tailoring versioning, bullet favorites, custom CV composition
 
 ## License
 
