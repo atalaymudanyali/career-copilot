@@ -26,11 +26,20 @@ def _build_gap_keywords() -> set[str]:
     for proj in PERMANENT_PROJECTS:
         for tech in proj["tech"].split(", "):
             _NOT_A_GAP_KEYWORDS.add(tech.lower())
-    _NOT_A_GAP_KEYWORDS.update([
-        "solid", "tdd", "test-driven", "ci/cd", "ci cd",
-        "github actions", "event-driven", "event driven",
-        "message broker", "message queue",
-    ])
+    _NOT_A_GAP_KEYWORDS.update(
+        [
+            "solid",
+            "tdd",
+            "test-driven",
+            "ci/cd",
+            "ci cd",
+            "github actions",
+            "event-driven",
+            "event driven",
+            "message broker",
+            "message queue",
+        ]
+    )
     return _NOT_A_GAP_KEYWORDS
 
 
