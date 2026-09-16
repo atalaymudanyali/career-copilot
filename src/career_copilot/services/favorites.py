@@ -59,6 +59,26 @@ async def list_all_favorites(
     return list(result.scalars().all())
 
 
+async def edit_favorite(
+    session: AsyncSession,
+    application_id: int,
+    old_text: str,
+    new_text: str,
+) -> bool:
+    existing = await session.execute(
+        select(FavoriteBullet).where(
+            FavoriteBullet.application_id == application_id,
+            FavoriteBullet.bullet_text == old_text,
+        )
+    )
+    favorite = existing.scalar_one_or_none()
+    if not favorite:
+        return False
+    favorite.bullet_text = new_text
+    await session.commit()
+    return True
+
+
 async def get_favorited_texts(
     session: AsyncSession,
     application_id: int,

@@ -33,10 +33,10 @@
   "skills": {
     "languages": ["C#", "Java", "Python", "C++", "JavaScript", "TypeScript", "SQL", "HTML/CSS"],
     "frameworks": [".NET Core", "Spring Boot", "FastAPI"],
-    "ai_ml": ["OpenAI API (GPT-4, Whisper, TTS)", "LLM API orchestration", "AI-assisted dev (Cursor, Claude)"],
+    "ai_ml": ["OpenAI API (GPT-4, Whisper, TTS)", "RAG", "LLM API orchestration", "AI-assisted dev (Cursor, Claude)"],
     "databases": ["PostgreSQL", "SQL Server", "MongoDB", "EF Core", "Spring Data JPA"],
     "security": ["JWT (refresh rotation)", "OAuth (Google/Apple Sign-In)", "Spring Security", "AES encryption"],
-    "tools": ["Docker", "Git", "Postman", "REST API Design", "Clean Architecture", "Onion Architecture"]
+    "tools": ["Docker", "Kubernetes", "Kafka/Redpanda", "Git", "Postman"]
   },
   "experience": [
     {

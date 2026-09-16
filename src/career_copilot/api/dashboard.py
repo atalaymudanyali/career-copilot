@@ -13,6 +13,7 @@ from career_copilot.services.applications import (
     update_application,
 )
 from career_copilot.services.favorites import (
+    edit_favorite,
     get_favorited_texts,
     list_all_favorites,
     list_favorites,
@@ -214,6 +215,9 @@ async def dashboard_tailor(
     filler_chunks = [c for c in all_chunks if c.source_id not in retrieved_ids]
     result = await tailor_rag(application.jd_text, chunks, filler_chunks=filler_chunks)
     result_dict = result.model_dump()
+    old_limits = (application.tailoring_result or {}).get("bullet_limits")
+    if old_limits:
+        result_dict["bullet_limits"] = old_limits
     await store_tailoring_result(session, application, result_dict)
     version = await create_version(session, application.id, result_dict)
 
@@ -332,6 +336,9 @@ async def dashboard_starred_bullets(
                 }
             )
 
+    raw_result = application.tailoring_result or {}
+    bullet_limits = raw_result.get("bullet_limits", {})
+
     application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
@@ -344,6 +351,7 @@ async def dashboard_starred_bullets(
             "favorited_texts": favorited,
             "is_starred_view": True,
             "version_fits": version_fits,
+            "bullet_limits": bullet_limits,
         },
     )
 
@@ -393,6 +401,8 @@ async def dashboard_use_fit(
                 }
             )
 
+    bullet_limits = result.get("bullet_limits", {})
+
     application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
@@ -405,6 +415,7 @@ async def dashboard_use_fit(
             "favorited_texts": favorited,
             "is_starred_view": True,
             "version_fits": version_fits,
+            "bullet_limits": bullet_limits,
         },
     )
 
@@ -504,11 +515,13 @@ async def download_cv_pdf(
                 }
             )
 
+    bl = application.tailoring_result.get("bullet_limits") or {}
     pdf_bytes = generate_cv_pdf(
         result,
         application.company,
         application.role,
         favorite_texts=fav_texts,
+        bullet_limits=bl,
     )
     filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
     return Response(
@@ -518,82 +531,8 @@ async def download_cv_pdf(
     )
 
 
-@router.get("/dashboard/{application_id}/compose")
-async def dashboard_compose(
-    request: Request,
-    application_id: int,
-    version_id: int | None = None,
-    session: AsyncSession = Depends(get_session),
-):
-    from career_copilot.services.pdf import MAX_BULLETS_PER_EXPERIENCE
-
-    application = await get_application(session, application_id)
-    if not application:
-        return HTMLResponse("Not found", status_code=404)
-
-    if version_id:
-        version = await get_version(session, version_id)
-        if version and version.application_id == application_id:
-            result = version.tailoring_result
-        else:
-            result = application.tailoring_result or {}
-    else:
-        result = application.tailoring_result or {}
-
-    if not result:
-        return HTMLResponse("Not yet tailored", status_code=404)
-
-    favorites = await list_favorites(session, application_id)
-    fav_texts = {f.bullet_text for f in favorites}
-
-    all_bullets = list(result.get("tailored_bullets", []))
-    existing_texts = {b["text"] for b in all_bullets}
-    for fav in favorites:
-        if fav.bullet_text not in existing_texts:
-            all_bullets.append(
-                {"text": fav.bullet_text, "source_id": fav.source_id, "relevance": fav.relevance}
-            )
-
-    relevance_order = {"high": 0, "medium": 1, "low": 2}
-    sorted_bullets = sorted(
-        all_bullets, key=lambda b: relevance_order.get(b.get("relevance", "medium"), 1)
-    )
-    fav_bullets = [b for b in sorted_bullets if b["text"] in fav_texts]
-    rest_bullets = [b for b in sorted_bullets if b["text"] not in fav_texts]
-
-    compose_bullets: list[dict] = []
-    exp_counts: dict[str, int] = {}
-    seen_texts: set[str] = set()
-    for bullet in fav_bullets + rest_bullets:
-        if bullet["text"] in seen_texts:
-            continue
-        is_fav = bullet["text"] in fav_texts
-        if not is_fav and bullet.get("relevance", "medium") == "low":
-            continue
-        parts = bullet["source_id"].split(":")
-        if parts[0] == "project":
-            continue
-        exp_id = parts[0]
-        count = exp_counts.get(exp_id, 0)
-        if count >= MAX_BULLETS_PER_EXPERIENCE:
-            continue
-        compose_bullets.append(bullet)
-        seen_texts.add(bullet["text"])
-        exp_counts[exp_id] = count + 1
-
-    return templates.TemplateResponse(
-        request,
-        "dashboard/_compose_section.html",
-        {
-            "app": application,
-            "compose_bullets": compose_bullets,
-            "why_i_fit": result.get("why_i_fit", ""),
-        },
-    )
-
-
-@router.post("/dashboard/{application_id}/compose/pdf")
-async def dashboard_compose_pdf(
+@router.post("/dashboard/{application_id}/bullet-limits")
+async def dashboard_set_bullet_limits(
     request: Request,
     application_id: int,
     session: AsyncSession = Depends(get_session),
@@ -603,29 +542,32 @@ async def dashboard_compose_pdf(
         return HTMLResponse("Not found", status_code=404)
 
     form = await request.form()
-    bullet_texts = form.getlist("bullet_text")
-    source_ids = form.getlist("source_id")
-    why_i_fit = form.get("why_i_fit", "")
+    result = dict(application.tailoring_result or {})
+    limits: dict[str, int] = {}
+    for key, val in form.items():
+        if key.startswith("limit_"):
+            exp_id = key[6:]
+            try:
+                limits[exp_id] = max(1, min(int(val), 6))
+            except ValueError:
+                pass
+    result["bullet_limits"] = limits
+    await store_tailoring_result(session, application, result)
+    return await dashboard_starred_bullets(request, application_id, session)
 
-    composed_result = {
-        "tailored_bullets": [
-            {"text": text.strip(), "source_id": sid, "relevance": "high"}
-            for text, sid in zip(bullet_texts, source_ids)
-            if text.strip()
-        ],
-        "why_i_fit": why_i_fit,
-        "gaps": [],
-    }
 
-    pdf_bytes = generate_cv_pdf(
-        composed_result, application.company, application.role, composed=True
-    )
-    filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
-    )
+@router.post("/dashboard/favorites/edit")
+async def dashboard_edit_favorite(
+    request: Request,
+    application_id: int = Form(),
+    old_text: str = Form(),
+    new_text: str = Form(),
+    session: AsyncSession = Depends(get_session),
+):
+    new_text = new_text.strip()
+    if new_text and new_text != old_text:
+        await edit_favorite(session, application_id, old_text, new_text)
+    return await dashboard_starred_bullets(request, application_id, session)
 
 
 @router.delete("/dashboard/{application_id}")

@@ -9,15 +9,6 @@
                 </svg>
                 Download PDF
             </a>
-            <button hx-get="/dashboard/{{ app.id }}/compose{% if version %}?version_id={{ version.id }}{% endif %}"
-                    hx-target="#tailoring-section"
-                    hx-swap="innerHTML"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-overlay text-slate-300 hover:text-white ring-1 ring-slate-600 hover:ring-slate-500 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                </svg>
-                Compose CV
-            </button>
             {% if versions %}
             <div class="flex items-center gap-1">
                 <button hx-get="/dashboard/{{ app.id }}/starred"
@@ -88,7 +79,38 @@
     {% set result = app.tailoring_result %}
 
     {% if is_starred_view %}
-    <h2 class="text-sm font-medium text-amber-400/70">Starred Bullets</h2>
+    <div class="flex items-center justify-between">
+        <h2 class="text-sm font-medium text-amber-400/70">Starred Bullets</h2>
+        <form hx-post="/dashboard/{{ app.id }}/bullet-limits"
+              hx-target="#tailoring-section"
+              hx-swap="innerHTML"
+              class="flex items-center gap-3">
+            <span class="text-[10px] text-slate-500 uppercase tracking-wider">Max bullets per exp:</span>
+            {% set exp_labels = {"internship-mobven": "Mobven", "internship-kkb": "KKB"} %}
+            {% set sources = [] %}
+            {% for bullet in result.get("tailored_bullets", []) %}
+                {% set exp = bullet["source_id"].split(":")[0] %}
+                {% if exp != "project" and exp not in sources %}
+                    {% if sources.append(exp) %}{% endif %}
+                {% endif %}
+            {% endfor %}
+            {% for exp_id in sources %}
+            <div class="flex items-center gap-1">
+                <label class="text-xs text-slate-400">{{ exp_labels.get(exp_id, exp_id) }}</label>
+                <select name="limit_{{ exp_id }}"
+                        class="bg-surface-overlay text-slate-200 text-xs rounded border border-slate-600 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    {% for n in range(1, 7) %}
+                    <option value="{{ n }}" {% if (bullet_limits or {}).get(exp_id, 4) == n %}selected{% endif %}>{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+            <button type="submit"
+                    class="px-2 py-0.5 text-xs rounded bg-brand-600 text-white hover:bg-brand-500 transition">
+                Apply
+            </button>
+        </form>
+    </div>
     {% else %}
     <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
     {% endif %}
@@ -128,7 +150,49 @@
                         {% include "dashboard/_bullet_star.html" %}
                         {% endif %}
                     </td>
+                    {% if is_starred_view %}
+                    <td class="px-4 py-3 text-sm text-slate-300">
+                        <div class="bullet-cell">
+                            <form hx-post="/dashboard/favorites/edit"
+                                  hx-target="#tailoring-section"
+                                  hx-swap="innerHTML"
+                                  class="flex items-start gap-2">
+                                <input type="hidden" name="application_id" value="{{ app.id }}">
+                                <input type="hidden" name="old_text" value="{{ bullet['text'] }}">
+                                <span class="bullet-display flex-1 cursor-pointer hover:text-white transition"
+                                      onclick="var c=this.closest('.bullet-cell'),e=c.querySelector('.bullet-edit-area'),b=c.querySelector('.bullet-edit-btn');this.hidden=true;e.hidden=false;b.hidden=true;e.querySelector('textarea').focus()">{{ bullet["text"] }}</span>
+                                <div class="bullet-edit-area flex-1" hidden>
+                                    <textarea name="new_text"
+                                              rows="2"
+                                              class="w-full bg-surface-overlay text-slate-200 text-sm rounded-md border border-slate-600 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none"
+                                              onkeydown="if(event.key==='Escape'){var c=this.closest('.bullet-cell');this.closest('.bullet-edit-area').hidden=true;c.querySelector('.bullet-display').hidden=false;c.querySelector('.bullet-edit-btn').hidden=false}"
+                                    >{{ bullet["text"] }}</textarea>
+                                    <div class="flex gap-1 mt-1 justify-end">
+                                        <button type="button"
+                                                class="px-2 py-0.5 text-xs rounded bg-surface-overlay text-slate-400 hover:text-white transition"
+                                                onclick="var c=this.closest('.bullet-cell');this.closest('.bullet-edit-area').hidden=true;c.querySelector('.bullet-display').hidden=false;c.querySelector('.bullet-edit-btn').hidden=false">
+                                            Cancel
+                                        </button>
+                                        <button type="submit"
+                                                class="px-2 py-0.5 text-xs rounded bg-brand-600 text-white hover:bg-brand-500 transition">
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button"
+                                        class="bullet-edit-btn shrink-0 w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-surface-overlay transition"
+                                        title="Edit bullet"
+                                        onclick="var c=this.closest('.bullet-cell'),e=c.querySelector('.bullet-edit-area'),d=c.querySelector('.bullet-display');d.hidden=true;e.hidden=false;this.hidden=true;e.querySelector('textarea').focus()">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                    {% else %}
                     <td class="px-4 py-3 text-sm text-slate-300">{{ bullet["text"] }}</td>
+                    {% endif %}
                     <td class="px-4 py-3 text-xs text-slate-500 font-mono">{{ bullet["source_id"] }}</td>
                     <td class="px-4 py-3">
                         {% set rel_colors = {

@@ -6,7 +6,7 @@
     <style>
         @page {
             size: A4;
-            margin: 1.2cm 1.6cm;
+            margin: 1cm 1.4cm;
         }
 
         * {
@@ -18,7 +18,7 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 10pt;
-            line-height: 1.35;
+            line-height: 1.25;
             color: #1A1A1A;
         }
 
@@ -30,11 +30,11 @@
         /* ── Header ── */
         .header {
             text-align: center;
-            margin-bottom: 6pt;
+            margin-bottom: 4pt;
         }
 
         .header h1 {
-            font-size: 26pt;
+            font-size: 20pt;
             font-weight: bold;
             color: #1A1A1A;
             margin-bottom: 4pt;
@@ -63,9 +63,10 @@
             text-transform: uppercase;
             color: #1F4E78;
             border-bottom: 1pt solid #1F4E78;
+            padding-top: 1pt;
             padding-bottom: 2pt;
-            margin-top: 8pt;
-            margin-bottom: 4pt;
+            margin-top: 6pt;
+            margin-bottom: 3pt;
         }
 
         /* ── Experience ── */
@@ -168,23 +169,11 @@
         /* ── Skills ── */
         .skill-row {
             font-size: 10pt;
-            line-height: 1.4;
+            line-height: 1.35;
             color: #1A1A1A;
         }
 
         .skill-label {
-            font-weight: bold;
-            color: #1A1A1A;
-        }
-
-        /* ── Languages ── */
-        .lang-row {
-            font-size: 10pt;
-            line-height: 1.4;
-            color: #1A1A1A;
-        }
-
-        .lang-label {
             font-weight: bold;
             color: #1A1A1A;
         }
@@ -198,7 +187,7 @@
 
         /* ── Spacing ── */
         .entry + .entry {
-            margin-top: 5pt;
+            margin-top: 3pt;
         }
     </style>
 </head>
@@ -310,9 +299,9 @@
 {% endfor %}
 {% endif %}
 
-<!-- Skills -->
+<!-- Skills, Languages & Interests -->
 {% if cv.skills %}
-<div class="section-title">Skills</div>
+<div class="section-title">Skills, Languages & Interests</div>
 {% if cv.skills.languages or cv.skills.frameworks %}
 <div class="skill-row"><span class="skill-label">Backend:</span> {{ (cv.skills.languages + cv.skills.frameworks) | join(", ") }}</div>
 {% endif %}
@@ -328,22 +317,17 @@
 {% if cv.skills.tools %}
 <div class="skill-row"><span class="skill-label">Tools:</span> {{ cv.skills.tools | join(", ") }}</div>
 {% endif %}
-{% endif %}
-
-<!-- Languages & Interests -->
-{% if cv.languages_spoken or cv.interests %}
-<div class="section-title">Languages & Interests</div>
 {% if cv.languages_spoken %}
-<div class="lang-row">
-    <span class="lang-label">Languages:</span>
+<div class="skill-row">
+    <span class="skill-label">Languages:</span>
     {% for lang in cv.languages_spoken %}
     {{ lang.language }} ({{ lang.level }}){% if not loop.last %},{% endif %}
     {% endfor %}
 </div>
 {% endif %}
 {% if cv.interests %}
-<div class="lang-row">
-    <span class="lang-label">Interests:</span>
+<div class="skill-row">
+    <span class="skill-label">Interests:</span>
     {{ cv.interests | join(", ") }}
 </div>
 {% endif %}

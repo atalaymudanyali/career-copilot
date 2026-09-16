@@ -22,6 +22,18 @@ PERMANENT_PROJECTS = [
             " Claude Desktop",
         ],
     },
+    {
+        "title": "AI Triage Pipeline",
+        "tech": "Python, FastAPI, Kafka/Redpanda, PostgreSQL, Docker, Kubernetes",
+        "bullets": [
+            "Event-driven microservices pipeline: AI agent consumes support ticket"
+            " events from Kafka (Redpanda), triages through a multi-step LLM agent"
+            " with idempotent writes and dead-letter topic for failed events",
+            "Two deployment paths with full observability: Docker Compose and"
+            " Kubernetes (kind) with Prometheus metrics, pre-built Grafana"
+            " dashboard, React admin UI, and CI via GitHub Actions",
+        ],
+    },
 ]
 
 
@@ -35,56 +47,42 @@ def generate_cv_pdf(
     company: str,
     role: str,
     favorite_texts: set[str] | None = None,
-    composed: bool = False,
+    bullet_limits: dict[str, int] | None = None,
 ) -> bytes:
     from weasyprint import HTML
 
     cv = load_cv()
     favorite_texts = favorite_texts or set()
+    bullet_limits = bullet_limits or {}
 
     bullets_by_source: dict[str, list[str]] = {}
     project_bullets: list[str] = []
 
     all_bullets = tailoring_result.get("tailored_bullets", [])
 
-    if composed:
-        for bullet in all_bullets:
-            source_id = bullet["source_id"]
-            parts = source_id.split(":")
-            if parts[0] == "project":
-                continue
-            if parts[0] == "custom":
-                if bullet["text"] not in project_bullets:
-                    project_bullets.append(bullet["text"])
-            else:
-                exp_id = parts[0]
-                if exp_id not in bullets_by_source:
-                    bullets_by_source[exp_id] = []
-                if bullet["text"] not in bullets_by_source[exp_id]:
-                    bullets_by_source[exp_id].append(bullet["text"])
-    else:
-        relevance_order = {"high": 0, "medium": 1, "low": 2}
-        sorted_bullets = sorted(
-            all_bullets, key=lambda b: relevance_order.get(b.get("relevance", "medium"), 1)
-        )
+    relevance_order = {"high": 0, "medium": 1, "low": 2}
+    sorted_bullets = sorted(
+        all_bullets, key=lambda b: relevance_order.get(b.get("relevance", "medium"), 1)
+    )
 
-        fav_bullets = [b for b in sorted_bullets if b["text"] in favorite_texts]
-        rest_bullets = [b for b in sorted_bullets if b["text"] not in favorite_texts]
+    fav_bullets = [b for b in sorted_bullets if b["text"] in favorite_texts]
+    rest_bullets = [b for b in sorted_bullets if b["text"] not in favorite_texts]
 
-        for bullet in fav_bullets + rest_bullets:
-            is_fav = bullet["text"] in favorite_texts
-            if not is_fav and bullet.get("relevance", "medium") == "low":
-                continue
-            source_id = bullet["source_id"]
-            parts = source_id.split(":")
-            if parts[0] == "project":
-                continue
-            exp_id = parts[0]
-            if exp_id not in bullets_by_source:
-                bullets_by_source[exp_id] = []
-            if len(bullets_by_source[exp_id]) < MAX_BULLETS_PER_EXPERIENCE:
-                if bullet["text"] not in bullets_by_source[exp_id]:
-                    bullets_by_source[exp_id].append(bullet["text"])
+    for bullet in fav_bullets + rest_bullets:
+        is_fav = bullet["text"] in favorite_texts
+        if not is_fav and bullet.get("relevance", "medium") == "low":
+            continue
+        source_id = bullet["source_id"]
+        parts = source_id.split(":")
+        if parts[0] == "project":
+            continue
+        exp_id = parts[0]
+        if exp_id not in bullets_by_source:
+            bullets_by_source[exp_id] = []
+        max_for_exp = bullet_limits.get(exp_id, MAX_BULLETS_PER_EXPERIENCE)
+        if len(bullets_by_source[exp_id]) < max_for_exp:
+            if bullet["text"] not in bullets_by_source[exp_id]:
+                bullets_by_source[exp_id].append(bullet["text"])
 
     env = Environment(loader=FileSystemLoader(str(PROJECT_ROOT / "templates")), autoescape=True)
     template = env.get_template("cv/document.html")

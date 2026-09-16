@@ -13,8 +13,37 @@ from career_copilot.prompts.templates import (
 )
 from career_copilot.services.data_loader import build_source_chunks, load_cv, load_projects
 from career_copilot.services.llm import OllamaClient
+from career_copilot.services.pdf import PERMANENT_PROJECTS
 
 logger = logging.getLogger(__name__)
+
+_NOT_A_GAP_KEYWORDS: set[str] = set()
+
+
+def _build_gap_keywords() -> set[str]:
+    if _NOT_A_GAP_KEYWORDS:
+        return _NOT_A_GAP_KEYWORDS
+    for proj in PERMANENT_PROJECTS:
+        for tech in proj["tech"].split(", "):
+            _NOT_A_GAP_KEYWORDS.add(tech.lower())
+    _NOT_A_GAP_KEYWORDS.update([
+        "solid", "tdd", "test-driven", "ci/cd", "ci cd",
+        "github actions", "event-driven", "event driven",
+        "message broker", "message queue",
+    ])
+    return _NOT_A_GAP_KEYWORDS
+
+
+def filter_gaps(gaps: list[str]) -> list[str]:
+    keywords = _build_gap_keywords()
+    filtered = []
+    for gap in gaps:
+        gap_lower = gap.lower()
+        if any(kw in gap_lower for kw in keywords):
+            logger.info("Filtered gap (candidate has this): %s", gap)
+            continue
+        filtered.append(gap)
+    return filtered
 
 
 def validate_source_ids(
@@ -65,7 +94,7 @@ async def tailor(job_description: str, client: OllamaClient | None = None) -> Ta
     return TailoringResult(
         tailored_bullets=valid_bullets,
         why_i_fit=result.why_i_fit,
-        gaps=result.gaps,
+        gaps=filter_gaps(result.gaps),
     )
 
 
@@ -113,7 +142,7 @@ async def tailor_rag(
     return TailoringResult(
         tailored_bullets=valid_bullets,
         why_i_fit=result.why_i_fit,
-        gaps=result.gaps,
+        gaps=filter_gaps(result.gaps),
     )
 
 
