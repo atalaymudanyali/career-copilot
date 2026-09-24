@@ -79,7 +79,7 @@ class TailoredBullet(BaseModel):
 
 class TailoringResult(BaseModel):
     tailored_bullets: list[TailoredBullet]
-    why_i_fit: str
+    why_i_fit: str = ""
     gaps: list[str] = []
 
 

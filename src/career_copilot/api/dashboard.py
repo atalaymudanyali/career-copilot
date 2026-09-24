@@ -437,6 +437,7 @@ async def dashboard_version_detail(
 
     versions = await list_versions(session, application_id)
     application.tailoring_result = version.tailoring_result
+    bullet_limits = (application.tailoring_result or {}).get("bullet_limits", {})
 
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
@@ -447,6 +448,7 @@ async def dashboard_version_detail(
             "version": version,
             "versions": versions,
             "favorited_texts": favorited,
+            "bullet_limits": bullet_limits,
         },
     )
 
@@ -524,10 +526,11 @@ async def download_cv_pdf(
         bullet_limits=bl,
     )
     filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
+    safe_filename = filename.encode("ascii", "ignore").decode()
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
     )
 
 
@@ -553,6 +556,13 @@ async def dashboard_set_bullet_limits(
                 pass
     result["bullet_limits"] = limits
     await store_tailoring_result(session, application, result)
+
+    view = form.get("view", "starred")
+    if view == "version":
+        version_id = int(form.get("version_id", 0))
+        return await dashboard_version_detail(
+            request, application_id, version_id, session
+        )
     return await dashboard_starred_bullets(request, application_id, session)
 
 

@@ -78,13 +78,22 @@
 
     {% set result = app.tailoring_result %}
 
-    {% if is_starred_view %}
     <div class="flex items-center justify-between">
+        {% if is_starred_view %}
         <h2 class="text-sm font-medium text-amber-400/70">Starred Bullets</h2>
+        {% else %}
+        <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
+        {% endif %}
         <form hx-post="/dashboard/{{ app.id }}/bullet-limits"
               hx-target="#tailoring-section"
               hx-swap="innerHTML"
               class="flex items-center gap-3">
+            {% if is_starred_view %}
+            <input type="hidden" name="view" value="starred">
+            {% elif version %}
+            <input type="hidden" name="view" value="version">
+            <input type="hidden" name="version_id" value="{{ version.id }}">
+            {% endif %}
             <span class="text-[10px] text-slate-500 uppercase tracking-wider">Max bullets per exp:</span>
             {% set exp_labels = {"internship-mobven": "Mobven", "internship-kkb": "KKB"} %}
             {% set sources = [] %}
@@ -111,9 +120,6 @@
             </button>
         </form>
     </div>
-    {% else %}
-    <h2 class="text-sm font-medium text-slate-400">Tailored CV Bullets</h2>
-    {% endif %}
 
     {% if result.get("tailored_bullets") %}
     <div class="bg-surface rounded-lg border border-slate-700/50 overflow-hidden">
