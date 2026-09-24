@@ -560,9 +560,7 @@ async def dashboard_set_bullet_limits(
     view = form.get("view", "starred")
     if view == "version":
         version_id = int(form.get("version_id", 0))
-        return await dashboard_version_detail(
-            request, application_id, version_id, session
-        )
+        return await dashboard_version_detail(request, application_id, version_id, session)
     return await dashboard_starred_bullets(request, application_id, session)
 
 
