@@ -18,7 +18,7 @@ PERMANENT_PROJECTS = [
             " traceability on every output through structured validation",
             "Full-stack containerized application: FastAPI, PostgreSQL + pgvector,"
             " async SQLAlchemy, HTMX dashboard with versioning and favorites,"
-            " PDF export, and an MCP server with 14 tools for use from"
+            " PDF export, and an MCP server with 15 tools for use from"
             " Claude Desktop",
         ],
     },

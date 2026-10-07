@@ -425,27 +425,42 @@ async def list_favorite_bullets(application_id: int | None = None) -> str:
 
 
 @mcp.tool()
-async def toggle_favorite_bullet(
+async def star_bullet(
     application_id: int,
     bullet_text: str,
     source_id: str,
     relevance: str = "medium",
 ) -> str:
-    """Star or unstar a bullet for an application. Returns the new state."""
+    """Star (favorite) a bullet for an application. Safe to repeat: it stays starred."""
     try:
-        from career_copilot.services.favorites import toggle_favorite
+        from career_copilot.services.favorites import add_favorite
 
         async with _get_db_session()() as session:
-            is_now_favorited = await toggle_favorite(
-                session, application_id, bullet_text, source_id, relevance
-            )
+            added = await add_favorite(session, application_id, bullet_text, source_id, relevance)
     except (OSError, Exception) as exc:
         if "connect" in str(exc).lower() or "operational" in str(exc).lower():
             return DB_UNAVAILABLE
         raise
 
-    action = "starred" if is_now_favorited else "unstarred"
-    return f"Bullet {action} for application #{application_id}: {bullet_text[:80]}"
+    state = "Starred" if added else "Already starred"
+    return f"{state} for application #{application_id}: {bullet_text[:80]}"
+
+
+@mcp.tool()
+async def unstar_bullet(application_id: int, bullet_text: str) -> str:
+    """Remove a bullet from an application's favorites. Safe to repeat."""
+    try:
+        from career_copilot.services.favorites import remove_favorite
+
+        async with _get_db_session()() as session:
+            removed = await remove_favorite(session, application_id, bullet_text)
+    except (OSError, Exception) as exc:
+        if "connect" in str(exc).lower() or "operational" in str(exc).lower():
+            return DB_UNAVAILABLE
+        raise
+
+    state = "Unstarred" if removed else "Was not starred"
+    return f"{state} for application #{application_id}: {bullet_text[:80]}"
 
 
 def main():

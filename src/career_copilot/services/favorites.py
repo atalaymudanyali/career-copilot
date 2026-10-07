@@ -1,4 +1,5 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from career_copilot.models.db import FavoriteBullet
@@ -33,6 +34,45 @@ async def toggle_favorite(
     session.add(new_fav)
     await session.commit()
     return True
+
+
+async def add_favorite(
+    session: AsyncSession,
+    application_id: int,
+    bullet_text: str,
+    source_id: str,
+    relevance: str = "medium",
+) -> bool:
+    """Star a bullet. Idempotent: starring twice leaves it starred. Returns True if newly added.
+
+    INSERT ... ON CONFLICT DO NOTHING is one atomic statement, so concurrent calls can't
+    race into a duplicate-key error the way check-then-insert can.
+    """
+    statement = (
+        insert(FavoriteBullet)
+        .values(
+            application_id=application_id,
+            bullet_text=bullet_text,
+            source_id=source_id,
+            relevance=relevance,
+        )
+        .on_conflict_do_nothing(index_elements=["application_id", "bullet_text"])
+    )
+    result = await session.execute(statement)
+    await session.commit()
+    return result.rowcount == 1
+
+
+async def remove_favorite(session: AsyncSession, application_id: int, bullet_text: str) -> bool:
+    """Unstar a bullet. Idempotent: repeating is harmless. Returns True if one was removed."""
+    result = await session.execute(
+        delete(FavoriteBullet).where(
+            FavoriteBullet.application_id == application_id,
+            FavoriteBullet.bullet_text == bullet_text,
+        )
+    )
+    await session.commit()
+    return result.rowcount > 0
 
 
 async def list_favorites(

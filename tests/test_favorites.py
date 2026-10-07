@@ -121,3 +121,42 @@ async def test_get_favorited_texts_empty():
 
     texts = await get_favorited_texts(session, 1)
     assert texts == set()
+
+
+def _session_with_rowcount(rowcount):
+    session = AsyncMock()
+    result = MagicMock()
+    result.rowcount = rowcount
+    session.execute.return_value = result
+    return session
+
+
+@pytest.mark.asyncio
+async def test_add_favorite_is_a_single_upsert():
+    from sqlalchemy.dialects import postgresql
+
+    from career_copilot.services.favorites import add_favorite
+
+    session = _session_with_rowcount(1)
+    assert await add_favorite(session, 1, "Built APIs", "exp1:b1", "high") is True
+
+    session.execute.assert_awaited_once()
+    sql = str(session.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
+    assert "ON CONFLICT (application_id, bullet_text) DO NOTHING" in sql
+
+
+@pytest.mark.asyncio
+async def test_add_favorite_reports_already_starred():
+    from career_copilot.services.favorites import add_favorite
+
+    assert await add_favorite(_session_with_rowcount(0), 1, "Built APIs", "exp1:b1") is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("rowcount", "expected"), [(1, True), (0, False)])
+async def test_remove_favorite(rowcount, expected):
+    from career_copilot.services.favorites import remove_favorite
+
+    session = _session_with_rowcount(rowcount)
+    assert await remove_favorite(session, 1, "Built APIs") is expected
+    session.commit.assert_awaited_once()

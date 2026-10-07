@@ -600,34 +600,30 @@ async def test_list_favorite_bullets_empty():
 
 
 @pytest.mark.asyncio
-async def test_toggle_favorite_bullet_star():
-    from career_copilot.mcp_server import toggle_favorite_bullet
+@pytest.mark.parametrize(("added", "expected"), [(True, "Starred"), (False, "Already starred")])
+async def test_star_bullet(added, expected):
+    from career_copilot.mcp_server import star_bullet
 
     _, mock_factory = _mock_db_session()
 
     with (
         patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
-        patch(
-            "career_copilot.services.favorites.toggle_favorite",
-            return_value=True,
-        ),
+        patch("career_copilot.services.favorites.add_favorite", return_value=added),
     ):
-        result = await toggle_favorite_bullet(1, "Built APIs", "exp1:b1")
-        assert "starred" in result
+        result = await star_bullet(1, "Built APIs", "exp1:b1")
+        assert result.startswith(expected)
 
 
 @pytest.mark.asyncio
-async def test_toggle_favorite_bullet_unstar():
-    from career_copilot.mcp_server import toggle_favorite_bullet
+@pytest.mark.parametrize(("removed", "expected"), [(True, "Unstarred"), (False, "Was not starred")])
+async def test_unstar_bullet(removed, expected):
+    from career_copilot.mcp_server import unstar_bullet
 
     _, mock_factory = _mock_db_session()
 
     with (
         patch("career_copilot.mcp_server._get_db_session", return_value=mock_factory),
-        patch(
-            "career_copilot.services.favorites.toggle_favorite",
-            return_value=False,
-        ),
+        patch("career_copilot.services.favorites.remove_favorite", return_value=removed),
     ):
-        result = await toggle_favorite_bullet(1, "Built APIs", "exp1:b1")
-        assert "unstarred" in result
+        result = await unstar_bullet(1, "Built APIs")
+        assert result.startswith(expected)

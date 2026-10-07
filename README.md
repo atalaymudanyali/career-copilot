@@ -6,7 +6,7 @@ Paste a job description, get back your existing experience reordered and rephras
 
 ## Features
 
-- **MCP server** — 14 tools accessible from Claude Desktop, Claude Code, or Cursor for conversational CV tailoring, gap analysis, application tracking, versioning, favorites, and PDF generation
+- **MCP server** — 15 tools accessible from Claude Desktop, Claude Code, or Cursor for conversational CV tailoring, gap analysis, application tracking, versioning, favorites, and PDF generation
 - **RAG-powered tailoring** — embeds your job description, retrieves the most relevant CV chunks via pgvector, and generates tailored bullets with source traceability
 - **Tailoring versioning** — every tailor run creates a versioned snapshot; browse and compare past versions without losing history
 - **Bullet favorites** — star individual bullets from any version; favorited bullets get priority in PDF generation
@@ -118,7 +118,8 @@ On macOS, it's at `~/Library/Application Support/Claude/claude_desktop_config.js
 | `list_tailoring_versions` | Docker | List version history for an application |
 | `get_tailoring_version` | Docker | Get a specific version's full result |
 | `list_favorite_bullets` | Docker | List starred bullets (all or per-app) |
-| `toggle_favorite_bullet` | Docker | Star or unstar a bullet |
+| `star_bullet` | Docker | Star a bullet (safe to repeat) |
+| `unstar_bullet` | Docker | Unstar a bullet (safe to repeat) |
 
 **Example prompts:**
 - "Tailor my CV for this role: [paste JD]"
@@ -158,7 +159,7 @@ career-copilot/
 │   └── projects/*.md              # Project descriptions (YAML frontmatter)
 ├── src/career_copilot/
 │   ├── cli.py                     # Typer CLI (local + API mode)
-│   ├── mcp_server.py              # MCP server (14 tools for Claude/Cursor)
+│   ├── mcp_server.py              # MCP server (15 tools for Claude/Cursor)
 │   ├── config.py                  # pydantic-settings configuration
 │   ├── db.py                      # Async database session management
 │   ├── main.py                    # FastAPI application
