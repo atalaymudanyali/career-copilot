@@ -9,6 +9,7 @@ from career_copilot.services.applications import (
     create_application,
     delete_application,
     get_application,
+    get_applications_by_ids,
     list_applications,
     store_tailoring_result,
     update_application,
@@ -36,6 +37,7 @@ router = APIRouter(tags=["dashboard"])
 
 # Optional fields an empty form input may clear; required fields ignore empty input.
 CLEARABLE_FIELDS = {"notes", "url"}
+
 
 
 @router.get("/")
@@ -105,11 +107,7 @@ async def dashboard_favorites(
     session: AsyncSession = Depends(get_session),
 ):
     favorites = await list_all_favorites(session)
-    apps_by_id: dict[int, object] = {}
-    for fav in favorites:
-        if fav.application_id not in apps_by_id:
-            app = await get_application(session, fav.application_id)
-            apps_by_id[fav.application_id] = app
+    apps_by_id = await get_applications_by_ids(session, {fav.application_id for fav in favorites})
     return templates.TemplateResponse(
         request,
         "dashboard/favorites.html",

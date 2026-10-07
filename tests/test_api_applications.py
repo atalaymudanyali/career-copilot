@@ -189,3 +189,29 @@ async def test_update_application_leaves_unsent_fields_alone():
     await update_application(mock_session, app, ApplicationUpdate(status="applied"))
 
     assert app.notes == "Keep me"
+
+
+@pytest.mark.asyncio
+async def test_get_applications_by_ids_uses_one_query():
+    from career_copilot.services.applications import get_applications_by_ids
+
+    first, second = _make_application(id=1), _make_application(id=2)
+    mock_session = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.all.return_value = [first, second]
+    mock_session.execute.return_value = mock_result
+
+    apps = await get_applications_by_ids(mock_session, {1, 2})
+
+    assert apps == {1: first, 2: second}
+    mock_session.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_applications_by_ids_skips_query_when_empty():
+    from career_copilot.services.applications import get_applications_by_ids
+
+    mock_session = AsyncMock()
+
+    assert await get_applications_by_ids(mock_session, set()) == {}
+    mock_session.execute.assert_not_awaited()

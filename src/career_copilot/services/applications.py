@@ -26,6 +26,16 @@ async def get_application(session: AsyncSession, application_id: int) -> Applica
     return result.scalar_one_or_none()
 
 
+async def get_applications_by_ids(
+    session: AsyncSession, application_ids: set[int]
+) -> dict[int, Application]:
+    """Fetch many applications in one query (WHERE id IN (...)) instead of one per id."""
+    if not application_ids:
+        return {}
+    result = await session.execute(select(Application).where(Application.id.in_(application_ids)))
+    return {application.id: application for application in result.scalars().all()}
+
+
 async def update_application(
     session: AsyncSession, application: Application, data: ApplicationUpdate
 ) -> Application:

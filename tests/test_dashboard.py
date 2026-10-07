@@ -97,3 +97,23 @@ async def test_empty_required_field_in_form_is_ignored():
 
     assert application.company == "Acme Corp"
     assert application.notes is None
+
+
+@pytest.mark.asyncio
+async def test_favorites_page_fetches_applications_in_one_call():
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from career_copilot.api.dashboard import dashboard_favorites
+
+    favorites = [MagicMock(application_id=i % 3) for i in range(9)]
+    with (
+        patch("career_copilot.api.dashboard.list_all_favorites", return_value=favorites),
+        patch("career_copilot.api.dashboard.get_applications_by_ids", return_value={}) as by_ids,
+        patch("career_copilot.api.dashboard.get_application") as single,
+        patch("career_copilot.api.dashboard.templates"),
+    ):
+        await dashboard_favorites(request=MagicMock(), session=AsyncMock())
+
+    by_ids.assert_awaited_once()
+    assert by_ids.await_args.args[1] == {0, 1, 2}
+    single.assert_not_called()
