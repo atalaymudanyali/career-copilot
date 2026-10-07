@@ -129,3 +129,23 @@ def test_load_cv_returns_cv_model():
     assert cv.contact.email == "atalay.mudanyali@gmail.com"
     assert len(cv.experience) > 0
     assert len(cv.education) > 0
+
+
+@pytest.mark.asyncio
+@patch("career_copilot.api.dashboard.run_in_threadpool")
+@patch("career_copilot.api.dashboard.list_favorites", return_value=[])
+@patch("career_copilot.api.dashboard.get_application")
+async def test_download_cv_pdf_renders_off_the_event_loop(mock_get, mock_favs, mock_threadpool):
+    from fastapi.testclient import TestClient
+
+    from career_copilot.main import app
+    from career_copilot.services.pdf import generate_cv_pdf
+
+    mock_get.return_value = _make_application()
+    mock_threadpool.return_value = b"%PDF-mock"
+
+    client = TestClient(app, raise_server_exceptions=False)
+    resp = client.get("/dashboard/1/cv.pdf")
+
+    assert resp.status_code == 200
+    assert mock_threadpool.call_args.args[0] is generate_cv_pdf

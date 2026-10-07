@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from career_copilot.db import get_session
 from career_copilot.models.domain import ApplicationCreate, ApplicationStatus, ApplicationUpdate
@@ -524,7 +525,10 @@ async def download_cv_pdf(
             )
 
     bl = application.tailoring_result.get("bullet_limits") or {}
-    pdf_bytes = generate_cv_pdf(
+    # WeasyPrint is synchronous and CPU-heavy; running it in a worker thread keeps the
+    # event loop free so other requests aren't blocked while the PDF renders.
+    pdf_bytes = await run_in_threadpool(
+        generate_cv_pdf,
         result,
         application.company,
         application.role,
