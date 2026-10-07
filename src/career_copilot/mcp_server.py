@@ -320,10 +320,10 @@ async def generate_cv_pdf(job_description: str, company: str, role: str) -> str:
     from datetime import datetime
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_company = company.replace(" ", "_")
-    safe_role = role.replace(" ", "_")
-    filename = f"CV_{safe_company}_{safe_role}_{timestamp}.pdf"
-    filepath = output_dir / filename
+    from career_copilot.services.filenames import cv_filename
+
+    # ASCII-only name: no path separators, so company/role text can't escape output/
+    filepath = output_dir / cv_filename(company, role, suffix=timestamp)
     filepath.write_bytes(pdf_bytes)
 
     return f"PDF generated: {filepath}"

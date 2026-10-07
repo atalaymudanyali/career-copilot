@@ -21,6 +21,7 @@ from career_copilot.services.favorites import (
     list_favorites,
     toggle_favorite,
 )
+from career_copilot.services.filenames import content_disposition
 from career_copilot.services.pdf import generate_cv_pdf
 from career_copilot.services.retrieval import retrieve
 from career_copilot.services.tailoring import get_source_chunks, tailor_rag
@@ -544,12 +545,10 @@ async def download_cv_pdf(
         favorite_texts=fav_texts,
         bullet_limits=bl,
     )
-    filename = f"CV_{application.company}_{application.role}.pdf".replace(" ", "_")
-    safe_filename = filename.encode("ascii", "ignore").decode()
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
+        headers={"Content-Disposition": content_disposition(application.company, application.role)},
     )
 
 
