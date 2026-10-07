@@ -100,6 +100,35 @@ async def test_empty_required_field_in_form_is_ignored():
 
 
 @pytest.mark.asyncio
+async def test_version_view_does_not_modify_the_application():
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from career_copilot.api.dashboard import dashboard_version_detail
+
+    application = _application("notes")
+    application.tailoring_result = {"tailored_bullets": [], "why_i_fit": "latest"}
+    version = MagicMock()
+    version.application_id = 1
+    version.tailoring_result = {"tailored_bullets": [], "why_i_fit": "old version"}
+
+    with (
+        patch("career_copilot.api.dashboard.get_application", return_value=application),
+        patch("career_copilot.api.dashboard.get_version", return_value=version),
+        patch("career_copilot.api.dashboard.list_versions", return_value=[version]),
+        patch("career_copilot.api.dashboard.get_favorited_texts", return_value=set()),
+        patch("career_copilot.api.dashboard.templates") as templates,
+    ):
+        await dashboard_version_detail(
+            request=MagicMock(), application_id=1, version_id=5, session=AsyncMock()
+        )
+
+    assert application.tailoring_result["why_i_fit"] == "latest"
+    shown = templates.TemplateResponse.call_args.args[2]["app"]
+    assert shown.tailoring_result["why_i_fit"] == "old version"
+    assert shown.company == "Acme Corp"
+
+
+@pytest.mark.asyncio
 async def test_favorites_page_fetches_applications_in_one_call():
     from unittest.mock import AsyncMock, MagicMock, patch
 

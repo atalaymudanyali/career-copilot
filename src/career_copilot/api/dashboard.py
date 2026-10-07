@@ -39,6 +39,20 @@ router = APIRouter(tags=["dashboard"])
 CLEARABLE_FIELDS = {"notes", "url"}
 
 
+class ApplicationView:
+    """Template stand-in that shows a different tailoring result for an application.
+
+    Assigning to the ORM object instead would mark it dirty, and the next query in the
+    request autoflushes an UPDATE; any later commit would overwrite the stored result.
+    """
+
+    def __init__(self, application, tailoring_result: dict | None):
+        self._application = application
+        self.tailoring_result = tailoring_result
+
+    def __getattr__(self, name):
+        return getattr(self._application, name)
+
 
 @router.get("/")
 async def index(request: Request):
@@ -344,13 +358,12 @@ async def dashboard_starred_bullets(
     raw_result = application.tailoring_result or {}
     bullet_limits = raw_result.get("bullet_limits", {})
 
-    application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/_tailoring_result.html",
         {
-            "app": application,
+            "app": ApplicationView(application, starred_result),
             "version": None,
             "versions": versions,
             "favorited_texts": favorited,
@@ -408,13 +421,12 @@ async def dashboard_use_fit(
 
     bullet_limits = result.get("bullet_limits", {})
 
-    application.tailoring_result = starred_result
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/_tailoring_result.html",
         {
-            "app": application,
+            "app": ApplicationView(application, starred_result),
             "version": None,
             "versions": versions,
             "favorited_texts": favorited,
@@ -441,15 +453,14 @@ async def dashboard_version_detail(
         return HTMLResponse("Version not found", status_code=404)
 
     versions = await list_versions(session, application_id)
-    application.tailoring_result = version.tailoring_result
-    bullet_limits = (application.tailoring_result or {}).get("bullet_limits", {})
+    bullet_limits = (version.tailoring_result or {}).get("bullet_limits", {})
 
     favorited = await get_favorited_texts(session, application_id)
     return templates.TemplateResponse(
         request,
         "dashboard/_tailoring_result.html",
         {
-            "app": application,
+            "app": ApplicationView(application, version.tailoring_result),
             "version": version,
             "versions": versions,
             "favorited_texts": favorited,
