@@ -1,7 +1,7 @@
 ---
 id: career-copilot
 title: Career Copilot
-tech: [Python, FastAPI, PostgreSQL, pgvector, Ollama, Docker, Prometheus, Grafana]
+tech: [Python, FastAPI, PostgreSQL, pgvector, Ollama, Docker, MCP, HTMX]
 date: 2026-08
 ---
 
