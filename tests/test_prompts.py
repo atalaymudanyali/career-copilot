@@ -68,3 +68,19 @@ def test_build_skill_gap_prompt_includes_all_sections():
     assert "Backend Developer" in prompt
     assert "Go developer" in prompt
     assert "Kubernetes" in prompt
+
+
+def test_prompts_have_no_hard_coded_never_gap_list():
+    from career_copilot.prompts.templates import SKILL_GAP_SYSTEM_PROMPT, SYSTEM_PROMPT
+
+    for prompt in (SYSTEM_PROMPT, SKILL_GAP_SYSTEM_PROMPT):
+        assert "AWS" not in prompt
+        assert "NEVER GAPS" not in prompt
+
+
+def test_user_prompt_includes_equivalents_only_when_given():
+    from career_copilot.prompts.templates import build_user_prompt
+
+    assert "counts these as covered" not in build_user_prompt("[]", "jd")
+    with_eq = build_user_prompt("[]", "jd", "- Kafka covers: RabbitMQ")
+    assert "- Kafka covers: RabbitMQ" in with_eq

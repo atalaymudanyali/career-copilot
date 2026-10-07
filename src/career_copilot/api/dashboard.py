@@ -352,6 +352,7 @@ async def dashboard_starred_bullets(
                     "version_id": v.id,
                     "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
                     "gaps": v.tailoring_result.get("gaps", []),
+                    "covered_gaps": v.tailoring_result.get("covered_gaps", []),
                     "is_active": v.tailoring_result.get("why_i_fit", "") == active_fit,
                 }
             )
@@ -416,6 +417,7 @@ async def dashboard_use_fit(
                     "version_id": v.id,
                     "why_i_fit": v.tailoring_result.get("why_i_fit", ""),
                     "gaps": v.tailoring_result.get("gaps", []),
+                    "covered_gaps": v.tailoring_result.get("covered_gaps", []),
                     "is_active": v.tailoring_result.get("why_i_fit", "") == result["why_i_fit"],
                 }
             )

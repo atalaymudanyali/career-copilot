@@ -1,0 +1,7 @@
+{
+  "Kafka/Redpanda": ["RabbitMQ", "message broker", "message queue", "event-driven", "event driven", "pub/sub"],
+  "PostgreSQL": ["MySQL", "relational database"],
+  "GitHub Actions": ["CI/CD", "continuous integration"],
+  "Clean Architecture and Onion Architecture": ["SOLID"],
+  "writing unit and integration tests": ["TDD", "test-driven development"]
+}

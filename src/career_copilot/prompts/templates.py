@@ -1,14 +1,4 @@
-from career_copilot.services.pdf import PERMANENT_PROJECTS
-
-
-def _project_tech_list() -> str:
-    techs = []
-    for proj in PERMANENT_PROJECTS:
-        techs.append(f"{proj['title']}: {proj['tech']}")
-    return "; ".join(techs)
-
-
-_SYSTEM_PROMPT_TEMPLATE = """\
+SYSTEM_PROMPT = """\
 You are a CV tailoring assistant. Your job is to reorder and rephrase the candidate's \
 existing experience to best match a job description.
 
@@ -20,19 +10,9 @@ from a specific source chunk.
 3. Every tailored bullet MUST include a source_id pointing to the chunk it came from.
 4. If the job description asks for something not present in any source chunk, \
 add it to the "gaps" array — do NOT fabricate a bullet for it. \
-However, do NOT list as gaps any technology that appears in the candidate's \
-portfolio projects or that is implied by their skills \
-(e.g. Clean/Onion Architecture implies SOLID principles; \
-writing unit/integration tests implies TDD familiarity). \
-Portfolio project technologies: {project_tech}
-
-THE FOLLOWING ARE NEVER GAPS — do not include any of these in the gaps array:
-- Event-driven architecture, Kafka, RabbitMQ, message brokers (candidate built a Kafka pipeline)
-- SOLID principles (candidate uses Clean Architecture and Onion Architecture)
-- CI/CD pipelines, GitHub Actions (candidate's triage project uses GitHub Actions CI)
-- Any cloud provider (AWS/GCP/Azure) when the candidate has Docker + Kubernetes experience
-- Any technology listed in the portfolio projects above or a close alternative \
-(e.g. Kafka covers RabbitMQ, PostgreSQL covers MySQL)
+A technology that appears anywhere in the source chunks (including the Skills chunk and \
+project Tech lists) is NOT a gap. Requirements about years of experience or seniority \
+that the candidate doesn't meet ARE gaps.
 5. The "why_i_fit" summary must only reference real experience from the source chunks. \
 Never fabricate or inflate claims — do not invent years of experience, \
 seniority levels, or metrics not present in the source chunks. \
@@ -40,17 +20,17 @@ If the candidate's experience is shorter than what the JD asks for, do NOT \
 round up or exaggerate — simply highlight the relevant experience they do have.
 
 OUTPUT FORMAT (strict JSON):
-{{
+{
   "tailored_bullets": [
-    {{
+    {
       "text": "rephrased bullet emphasizing relevance to the job",
       "source_id": "exact source_id from the source chunk used",
       "relevance": "high" | "medium" | "low"
-    }}
+    }
   ],
   "why_i_fit": "2-3 sentence summary of why this candidate fits, referencing only real experience",
   "gaps": ["skill or requirement from the JD not found in source chunks"]
-}}
+}
 
 6. PAGE FILL: The CV must fill a full page. Include a tailored bullet for EVERY \
 source chunk provided, even those less related to the JD. For less relevant chunks, \
@@ -60,10 +40,19 @@ A short CV hurts the candidate more than having some lower-relevance bullets.
 Order tailored_bullets from most relevant to least relevant for this specific job.\
 """
 
-SYSTEM_PROMPT = _SYSTEM_PROMPT_TEMPLATE.format(project_tech=_project_tech_list())
+
+def _equivalents_section(equivalents_text: str) -> str:
+    if not equivalents_text:
+        return ""
+    return (
+        "The candidate counts these as covered (do not list the right-hand side as gaps):\n"
+        f"{equivalents_text}\n\n---\n\n"
+    )
 
 
-def build_user_prompt(source_chunks_json: str, job_description: str) -> str:
+def build_user_prompt(
+    source_chunks_json: str, job_description: str, equivalents_text: str = ""
+) -> str:
     return f"""\
 Here are the candidate's source chunks (these are the ONLY facts you may use):
 
@@ -71,7 +60,7 @@ Here are the candidate's source chunks (these are the ONLY facts you may use):
 
 ---
 
-Here is the job description to tailor for:
+{_equivalents_section(equivalents_text)}Here is the job description to tailor for:
 
 {job_description}
 
@@ -86,6 +75,7 @@ def build_user_prompt_with_fillers(
     relevant_chunks_json: str,
     filler_chunks_json: str,
     job_description: str,
+    equivalents_text: str = "",
 ) -> str:
     return f"""\
 RELEVANT source chunks (most related to this job — prioritize and rephrase these):
@@ -100,7 +90,7 @@ ADDITIONAL source chunks (include these to fill the CV page — keep wording clo
 
 ---
 
-Here is the job description to tailor for:
+{_equivalents_section(equivalents_text)}Here is the job description to tailor for:
 
 {job_description}
 
@@ -114,8 +104,8 @@ and anything the job asks for that isn't in the source chunks goes in "gaps".\
 """
 
 
-_SKILL_GAP_SYSTEM_PROMPT_TEMPLATE = """\
-You are a career advisor. Given a candidate's skills and experience, analyze \
+SKILL_GAP_SYSTEM_PROMPT = """\
+You are a career advisor. Given a candidate's skills, experience and projects, analyze \
 a job description and identify specific gaps — skills, tools, certifications, \
 or experience the job asks for that the candidate does not have.
 
@@ -127,18 +117,10 @@ Be concrete and actionable. Group gaps into categories:
 For each gap, briefly suggest how the candidate could address it \
 (online course, side project, certification, etc.).
 
-IMPORTANT: The candidate also has portfolio project experience with the following \
-technologies: {project_tech}. \
-Additionally, Clean/Onion Architecture implies SOLID principles, and \
-unit/integration testing experience implies TDD familiarity. \
-These are NOT gaps — do not list them. \
-Also, experience with one technology in a category covers similar alternatives \
-(e.g. Kafka covers RabbitMQ, PostgreSQL covers MySQL) — do not gap the alternative.\
+A technology listed in the candidate's skills or in any project's technologies is NOT a \
+gap, and neither is anything the candidate lists as covered by an equivalent skill. \
+Years-of-experience and seniority requirements still count as gaps when unmet.\
 """
-
-SKILL_GAP_SYSTEM_PROMPT = _SKILL_GAP_SYSTEM_PROMPT_TEMPLATE.format(
-    project_tech=_project_tech_list()
-)
 
 
 def build_skill_gap_prompt(

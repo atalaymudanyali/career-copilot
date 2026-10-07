@@ -13,46 +13,33 @@ from career_copilot.prompts.templates import (
 )
 from career_copilot.services.data_loader import build_source_chunks, load_cv, load_projects
 from career_copilot.services.llm import OllamaClient
-from career_copilot.services.pdf import PERMANENT_PROJECTS
+from career_copilot.services.skills import (
+    build_skill_index,
+    format_equivalents,
+    load_equivalents,
+    split_gaps,
+)
 
 logger = logging.getLogger(__name__)
 
-_NOT_A_GAP_KEYWORDS: set[str] = set()
+
+def _gap_context() -> tuple[dict[str, str], str]:
+    """Known-skill index for filtering gaps, and the equivalents text for the prompt."""
+    equivalents = load_equivalents()
+    index = build_skill_index(load_cv(), load_projects(), equivalents)
+    return index, format_equivalents(equivalents)
 
 
-def _build_gap_keywords() -> set[str]:
-    if _NOT_A_GAP_KEYWORDS:
-        return _NOT_A_GAP_KEYWORDS
-    for proj in PERMANENT_PROJECTS:
-        for tech in proj["tech"].split(", "):
-            _NOT_A_GAP_KEYWORDS.add(tech.lower())
-    _NOT_A_GAP_KEYWORDS.update(
-        [
-            "solid",
-            "tdd",
-            "test-driven",
-            "ci/cd",
-            "ci cd",
-            "github actions",
-            "event-driven",
-            "event driven",
-            "message broker",
-            "message queue",
-        ]
+def _final_result(result: TailoringResult, valid_bullets, index: dict[str, str]):
+    missing, covered = split_gaps(result.gaps, index)
+    for item in covered:
+        logger.info("Gap covered by candidate data: %s (%s)", item.gap, item.covered_by)
+    return TailoringResult(
+        tailored_bullets=valid_bullets,
+        why_i_fit=result.why_i_fit,
+        gaps=missing,
+        covered_gaps=covered,
     )
-    return _NOT_A_GAP_KEYWORDS
-
-
-def filter_gaps(gaps: list[str]) -> list[str]:
-    keywords = _build_gap_keywords()
-    filtered = []
-    for gap in gaps:
-        gap_lower = gap.lower()
-        if any(kw in gap_lower for kw in keywords):
-            logger.info("Filtered gap (candidate has this): %s", gap)
-            continue
-        filtered.append(gap)
-    return filtered
 
 
 def validate_source_ids(
@@ -82,7 +69,8 @@ async def tailor(job_description: str, client: OllamaClient | None = None) -> Ta
         [chunk.model_dump() for chunk in chunks],
         indent=2,
     )
-    user_prompt = build_user_prompt(chunks_json, job_description)
+    index, equivalents_text = _gap_context()
+    user_prompt = build_user_prompt(chunks_json, job_description, equivalents_text)
 
     raw_response = await llm.chat(
         system_prompt=SYSTEM_PROMPT,
@@ -100,11 +88,7 @@ async def tailor(job_description: str, client: OllamaClient | None = None) -> Ta
             bullet.text,
         )
 
-    return TailoringResult(
-        tailored_bullets=valid_bullets,
-        why_i_fit=result.why_i_fit,
-        gaps=filter_gaps(result.gaps),
-    )
+    return _final_result(result, valid_bullets, index)
 
 
 async def tailor_rag(
@@ -123,14 +107,17 @@ async def tailor_rag(
         indent=2,
     )
 
+    index, equivalents_text = _gap_context()
     if filler_chunks:
         filler_json = json.dumps(
             [chunk.model_dump() for chunk in filler_chunks],
             indent=2,
         )
-        user_prompt = build_user_prompt_with_fillers(chunks_json, filler_json, job_description)
+        user_prompt = build_user_prompt_with_fillers(
+            chunks_json, filler_json, job_description, equivalents_text
+        )
     else:
-        user_prompt = build_user_prompt(chunks_json, job_description)
+        user_prompt = build_user_prompt(chunks_json, job_description, equivalents_text)
 
     raw_response = await llm.chat(
         system_prompt=SYSTEM_PROMPT,
@@ -148,11 +135,7 @@ async def tailor_rag(
             bullet.text,
         )
 
-    return TailoringResult(
-        tailored_bullets=valid_bullets,
-        why_i_fit=result.why_i_fit,
-        gaps=filter_gaps(result.gaps),
-    )
+    return _final_result(result, valid_bullets, index)
 
 
 def get_source_chunks() -> list[SourceChunk]:

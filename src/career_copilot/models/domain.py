@@ -77,10 +77,18 @@ class TailoredBullet(BaseModel):
     relevance: str = "medium"
 
 
+class CoveredGap(BaseModel):
+    """A gap the LLM reported that the candidate's own data already covers."""
+
+    gap: str
+    covered_by: str
+
+
 class TailoringResult(BaseModel):
     tailored_bullets: list[TailoredBullet]
     why_i_fit: str = ""
     gaps: list[str] = []
+    covered_gaps: list[CoveredGap] = []
 
 
 class ApplicationStatus(StrEnum):

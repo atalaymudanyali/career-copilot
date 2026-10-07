@@ -253,6 +253,7 @@
                 {% endfor %}
             </ul>
             {% endif %}
+            {% with covered = vf.covered_gaps %}{% include "dashboard/_covered_gaps.html" %}{% endwith %}
             {% endif %}
         {% endfor %}
     </div>
@@ -274,5 +275,6 @@
         </ul>
     </div>
     {% endif %}
+    {% with covered = result.get("covered_gaps") %}{% include "dashboard/_covered_gaps.html" %}{% endwith %}
     {% endif %}
 </div>

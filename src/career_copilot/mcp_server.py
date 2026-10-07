@@ -9,6 +9,7 @@ from career_copilot.prompts.templates import (
 )
 from career_copilot.services.data_loader import build_source_chunks, load_cv, load_projects
 from career_copilot.services.llm import OllamaClient
+from career_copilot.services.skills import format_equivalents, load_equivalents
 from career_copilot.services.tailoring import tailor
 
 mcp = MCPServer("Career Copilot")
@@ -128,6 +129,11 @@ async def tailor_cv(job_description: str) -> str:
         for gap in result.gaps:
             lines.append(f"- {gap}")
 
+    if result.covered_gaps:
+        lines.extend(["", "## Covered by your experience"])
+        for item in result.covered_gaps:
+            lines.append(f"- {item.gap} ({item.covered_by})")
+
     return "\n".join(lines)
 
 
@@ -145,6 +151,11 @@ async def analyze_skill_gaps(job_description: str) -> str:
         experience_summary = []
         for exp in cv.experience:
             experience_summary.append(f"- {exp.role} at {exp.company} ({exp.dates})")
+        for project in load_projects():
+            experience_summary.append(f"- Project: {project.title} ({', '.join(project.tech)})")
+        equivalents_text = format_equivalents(load_equivalents())
+        if equivalents_text:
+            experience_summary.append("\nCovered by equivalent skills:\n" + equivalents_text)
 
         llm = OllamaClient()
         prompt = build_skill_gap_prompt(

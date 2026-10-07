@@ -1,3 +1,5 @@
+import pytest
+
 from career_copilot.models.domain import SourceChunk, TailoredBullet, TailoringResult
 from career_copilot.services.tailoring import validate_source_ids
 
@@ -80,3 +82,25 @@ def test_validate_source_ids_accepts_filler_ids():
     valid, invalid = validate_source_ids(bullets, all_valid_ids)
     assert len(valid) == 2
     assert len(invalid) == 0
+
+
+@pytest.mark.asyncio
+async def test_tailor_rag_separates_covered_gaps_from_real_ones():
+    from unittest.mock import AsyncMock
+
+    from career_copilot.models.domain import SourceChunk
+    from career_copilot.services.tailoring import tailor_rag
+
+    client = AsyncMock()
+    client.chat.return_value = {
+        "tailored_bullets": [],
+        "why_i_fit": "",
+        "gaps": ["Prometheus", "AWS", "5+ years of Python", "RabbitMQ"],
+    }
+    chunks = [SourceChunk(source_id="skills:all", source_type="skill", content="[Skills] ...")]
+
+    result = await tailor_rag("job", chunks, client=client)
+
+    assert result.gaps == ["AWS", "5+ years of Python"]
+    assert {c.gap for c in result.covered_gaps} == {"Prometheus", "RabbitMQ"}
+    assert "counts these as covered" in client.chat.await_args.kwargs["user_prompt"]

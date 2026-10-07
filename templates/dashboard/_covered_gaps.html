@@ -1,0 +1,12 @@
+{% if covered %}
+<details class="mt-2">
+    <summary class="text-xs text-slate-500 cursor-pointer hover:text-slate-400">
+        Covered by your experience ({{ covered|length }}) — not counted as gaps
+    </summary>
+    <ul class="mt-1 text-xs text-slate-400 bg-surface-overlay/40 border border-slate-700/50 rounded-lg p-3 space-y-1">
+        {% for item in covered %}
+        <li>{{ item.gap }} <span class="text-slate-500">— {{ item.covered_by }}</span></li>
+        {% endfor %}
+    </ul>
+</details>
+{% endif %}

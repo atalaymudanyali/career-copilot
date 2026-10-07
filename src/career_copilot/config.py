@@ -18,6 +18,10 @@ class Settings(BaseSettings):
         return self.data_dir / "cv.json"
 
     @property
+    def skill_equivalents_path(self) -> Path:
+        return self.data_dir / "skill_equivalents.json"
+
+    @property
     def projects_dir(self) -> Path:
         return self.data_dir / "projects"
 

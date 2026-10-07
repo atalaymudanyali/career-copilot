@@ -52,6 +52,12 @@ def render_result(result: TailoringResult) -> None:
             gap_table.add_row(gap)
         console.print(gap_table)
 
+    if result.covered_gaps:
+        console.print()
+        console.print("[dim]Covered by your experience:[/dim]")
+        for item in result.covered_gaps:
+            console.print(f"[dim]  • {item.gap} ({item.covered_by})[/dim]")
+
 
 def _read_jd(jd: Path | None) -> str:
     if jd:
