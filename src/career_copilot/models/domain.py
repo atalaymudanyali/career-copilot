@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ContactInfo(BaseModel):
@@ -106,6 +106,15 @@ class ApplicationUpdate(BaseModel):
     jd_text: str | None = None
     url: str | None = None
     notes: str | None = None
+
+    @field_validator("company", "role", "status", "jd_text")
+    @classmethod
+    def required_fields_not_null(cls, value):
+        # Omitting these is fine (partial update); explicitly clearing them is not,
+        # because their database columns are NOT NULL.
+        if value is None:
+            raise ValueError("cannot be null")
+        return value
 
 
 class TailoringVersionResponse(BaseModel):

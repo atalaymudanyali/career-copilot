@@ -33,6 +33,9 @@ from career_copilot.templating import templates
 
 router = APIRouter(tags=["dashboard"])
 
+# Optional fields an empty form input may clear; required fields ignore empty input.
+CLEARABLE_FIELDS = {"notes", "url"}
+
 
 @router.get("/")
 async def index(request: Request):
@@ -182,7 +185,10 @@ async def dashboard_update(
     for field in ("status", "notes", "company", "role", "jd_text", "url"):
         if field in form_data:
             value = form_data[field]
-            update_fields[field] = value if value != "" else None
+            if value != "":
+                update_fields[field] = value
+            elif field in CLEARABLE_FIELDS:
+                update_fields[field] = None
 
     data = ApplicationUpdate(**update_fields)
     application = await update_application(session, application, data)

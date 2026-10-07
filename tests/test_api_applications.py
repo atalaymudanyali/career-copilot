@@ -163,3 +163,29 @@ async def test_delete_application():
 
     mock_session.delete.assert_called_once_with(app)
     mock_session.commit.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_update_application_can_clear_optional_field():
+    from career_copilot.models.domain import ApplicationUpdate
+    from career_copilot.services.applications import update_application
+
+    mock_session = AsyncMock()
+    app = _make_application(notes="Old notes")
+
+    await update_application(mock_session, app, ApplicationUpdate(notes=None))
+
+    assert app.notes is None
+
+
+@pytest.mark.asyncio
+async def test_update_application_leaves_unsent_fields_alone():
+    from career_copilot.models.domain import ApplicationUpdate
+    from career_copilot.services.applications import update_application
+
+    mock_session = AsyncMock()
+    app = _make_application(notes="Keep me")
+
+    await update_application(mock_session, app, ApplicationUpdate(status="applied"))
+
+    assert app.notes == "Keep me"

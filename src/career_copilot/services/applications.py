@@ -29,7 +29,8 @@ async def get_application(session: AsyncSession, application_id: int) -> Applica
 async def update_application(
     session: AsyncSession, application: Application, data: ApplicationUpdate
 ) -> Application:
-    for field, value in data.model_dump(exclude_none=True).items():
+    # exclude_unset keeps explicit nulls, so a client can clear a field like notes
+    for field, value in data.model_dump(exclude_unset=True).items():
         setattr(application, field, value)
     await session.commit()
     await session.refresh(application)

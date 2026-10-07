@@ -89,3 +89,14 @@ def test_application_response_without_tailoring():
         updated_at=now,
     )
     assert resp.tailoring_result is None
+
+
+@pytest.mark.parametrize("field", ["company", "role", "status", "jd_text"])
+def test_application_update_rejects_null_required_field(field):
+    with pytest.raises(ValidationError):
+        ApplicationUpdate(**{field: None})
+
+
+def test_application_update_allows_null_optional_field():
+    update = ApplicationUpdate(notes=None, url=None)
+    assert update.model_dump(exclude_unset=True) == {"notes": None, "url": None}
