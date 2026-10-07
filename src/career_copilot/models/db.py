@@ -45,6 +45,7 @@ class Application(Base):
 
 class TailoringVersion(Base):
     __tablename__ = "tailoring_versions"
+    __table_args__ = (UniqueConstraint("application_id", "version_number"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     application_id: Mapped[int] = mapped_column(

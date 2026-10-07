@@ -1,12 +1,18 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from career_copilot.models.db import TailoringVersion
+from career_copilot.models.db import Application, TailoringVersion
 
 
 async def create_version(
     session: AsyncSession, application_id: int, tailoring_result: dict
 ) -> TailoringVersion:
+    # Lock the parent application row so concurrent calls number versions one at a time;
+    # without it, two requests can both read the same MAX and create duplicate numbers.
+    # The lock is released when the transaction commits below.
+    await session.execute(
+        select(Application.id).where(Application.id == application_id).with_for_update()
+    )
     max_version = await session.execute(
         select(func.max(TailoringVersion.version_number)).where(
             TailoringVersion.application_id == application_id

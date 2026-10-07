@@ -122,3 +122,17 @@ async def test_get_latest_version_none():
 
     result = await get_latest_version(session, 1)
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_create_version_locks_application_row_before_numbering():
+    session = _mock_session()
+    mock_scalar = MagicMock()
+    mock_scalar.scalar.return_value = 2
+    session.execute.return_value = mock_scalar
+
+    await create_version(session, 1, SAMPLE_RESULT)
+
+    first_statement = session.execute.await_args_list[0].args[0]
+    assert first_statement._for_update_arg is not None
+    assert session.add.call_args[0][0].version_number == 3
